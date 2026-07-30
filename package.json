@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "test:contract": "node tests/unit/contract-allowlist.test.mjs"
+  },
+  "devDependencies": {},
+  "private": true
+}
