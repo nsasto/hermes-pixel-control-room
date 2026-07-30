@@ -23,6 +23,7 @@ __pycache__/
 # Purchased/private artwork
 assets/private/
 assets/source/
+assets/pixel_art/
 
 # Runtime state
 *.log
