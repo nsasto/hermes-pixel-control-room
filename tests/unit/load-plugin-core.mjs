@@ -10,7 +10,7 @@ export async function loadPluginCore() {
     .replace(/import \{ useMemo, useState \} from 'react'\n/, `const useMemo = (fn) => fn()\nconst useState = (initial) => [initial, () => {}]\n`)
     .replace(/import \{ jsx, jsxs \} from 'react\/jsx-runtime'\n/, `const jsx = (type, props, key) => ({ type, props: props || {}, key })\nconst jsxs = jsx\n`)
     .replace(/export default \{/, 'const pluginDefault = {')
-    + `\nexport { SNAPSHOT_METHOD, CHANGE_EVENT, queryKey, normalizeSnapshot, mergeSnapshotPages, readSnapshot, buildAgents, applyFilters, stateTotals, officeLayout, freshnessState, isSafeEventForScope, pluginDefault }\n`
+    + `\nexport { SNAPSHOT_METHOD, CHANGE_EVENT, queryKey, normalizeSnapshot, mergeSnapshotPages, readSnapshot, buildAgents, applyFilters, stateTotals, officeLayout, freshnessState, isSafeEventForScope, registerInvalidationListener, visibleAgentWindow, resolveSelectedAgentId, pluginDefault }\n`
   const encoded = Buffer.from(transformed, 'utf8').toString('base64')
   return import(`data:text/javascript;base64,${encoded}#${Date.now()}-${Math.random()}`)
 }

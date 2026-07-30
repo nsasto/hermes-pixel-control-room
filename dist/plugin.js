@@ -24,7 +24,7 @@ const CHANGE_EVENT = 'kanban.changed.v1'
 const ROUTE = '/pixel-agents'
 const SCHEMA_VERSION = 1
 const PAGE_LIMIT = 200
-const MAX_PAGES = 3
+const MAX_PAGES = 10
 const MAX_TEXT = 120
 const MAX_OFFICE_OCCUPANTS = 24
 const THEME_TOKEN_SENTINELS = ['var(--ui-text-secondary)', 'var(--ui-stroke-secondary)']
@@ -167,9 +167,9 @@ function assertPageScope(page, scope, index) {
   if (page.ordering !== 'createdAt,id') throw new Error('inconsistent ordering')
 }
 
-function mergeSnapshotPages(rawPages, scope = {}) {
-  if (!rawPages.length) throw new Error('snapshot returned no pages')
-  const pages = rawPages.map((raw) => normalizeSnapshot(raw))
+function mergeSnapshotPages(inputPages, scope = {}) {
+  if (!inputPages.length) throw new Error('snapshot returned no pages')
+  const pages = inputPages.map((page) => page.profileIds ? page : normalizeSnapshot(page))
   const expected = { board: scope.board || pages[0].board, profile: scope.profile ?? pages[0].profile }
   const merged = { ...pages[0], profiles: [], tasks: [], runs: [], profileIds: [], hasMore: false, nextCursor: null }
   const profileSeen = new Set(), taskSeen = new Set(), runSeen = new Set(), profileIds = new Set()
@@ -180,6 +180,7 @@ function mergeSnapshotPages(rawPages, scope = {}) {
     revision = page.revision
     if (index < pages.length - 1 && (!page.hasMore || !page.nextCursor)) throw new Error('missing cursor before final page')
     if (index === pages.length - 1 && page.hasMore && !page.nextCursor) throw new Error('hasMore requires cursor')
+    if (index === pages.length - 1 && page.hasMore) throw new Error('Snapshot pagination exceeded safe page budget; narrow board/profile scope or retry after pagination completes')
     for (const p of page.profiles) { if (!profileSeen.has(p.id)) { profileSeen.add(p.id); merged.profiles.push(p); profileIds.add(p.id) } }
     for (const t of page.tasks) { assertUnique(t.id, taskSeen, 'task'); merged.tasks.push(t); if (t.assigneeId) profileIds.add(t.assigneeId) }
     for (const r of page.runs) { assertUnique(r.id, runSeen, 'run'); merged.runs.push(r); profileIds.add(r.profileId) }
@@ -198,7 +199,7 @@ async function readSnapshot(scope = {}) {
   for (let pageIndex = 0; pageIndex < MAX_PAGES; pageIndex += 1) {
     const rawPage = await readSnapshotPage(scope, cursor)
     const checked = normalizeSnapshot(rawPage)
-    pages.push(rawPage)
+    pages.push(checked)
     if (!checked.hasMore || !checked.nextCursor) break
     cursor = checked.nextCursor
   }
@@ -219,9 +220,29 @@ function isSafeEventForScope(payload, scope) {
 function freshnessState({ gateway, lastSuccessAt, consecutiveFailures, now }) {
   if (gateway !== 'open') return { label: 'disconnected', kind: 'danger' }
   if (!lastSuccessAt) return { label: 'loading', kind: 'info' }
-  if (consecutiveFailures >= 2 || now - lastSuccessAt > 30) return { label: 'stale', kind: 'warning' }
+  if (consecutiveFailures >= 2) return { label: 'stale', kind: 'warning' }
   if (consecutiveFailures > 0) return { label: 'last-good', kind: 'warning' }
   return { label: 'fresh', kind: 'success' }
+}
+
+function resolveSelectedAgentId(agents, selectedId) {
+  if (!agents.length) return null
+  if (selectedId && agents.some((agent) => agent.id === selectedId)) return selectedId
+  const preferred = agents.find((agent) => agent.group === 'blocked') || agents.find((agent) => agent.group === 'running') || agents[0]
+  return preferred.id
+}
+
+function visibleAgentWindow(agents, { start = 0, size = 48, maxRows = 500 } = {}) {
+  const totalSafeRows = Math.min(agents.length, maxRows)
+  const safeStart = Math.max(0, Math.min(Number(start) || 0, totalSafeRows))
+  const safeSize = Math.max(1, Math.min(Number(size) || 48, 80))
+  return Object.freeze({
+    rows: Object.freeze(agents.slice(safeStart, Math.min(totalSafeRows, safeStart + safeSize))),
+    start: safeStart,
+    totalSafeRows,
+    totalRows: agents.length,
+    truncated: agents.length > maxRows
+  })
 }
 
 function usePixelAgentsData(boardOverride) {
@@ -357,7 +378,8 @@ function registerInvalidationListener() {
   return host.onEvent(CHANGE_EVENT, (event) => {
     const payload = event?.payload || event
     if (!payload || payload.schemaVersion !== SCHEMA_VERSION || typeof payload.board !== 'string') return
-    if (isSafeEventForScope(payload, { board: payload.board, profile: payload.profile || null })) queryClient.invalidateQueries({ queryKey: ['pixel-agents', 'snapshot', SCHEMA_VERSION, payload.board, payload.profile || 'all-profiles'] })
+    const board = safeId(payload.board, 'board')
+    queryClient.invalidateQueries({ predicate: 'pixel-agents-board', board })
   })
 }
 
