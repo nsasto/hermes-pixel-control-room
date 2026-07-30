@@ -1,0 +1,11 @@
+{
+  "name": "hermes-pixel-control-room",
+  "label": "Control Room",
+  "description": "A view-only pixel control room for Hermes profiles and activity.",
+  "icon": "MonitorCog",
+  "version": "0.1.0",
+  "tab": { "path": "/control-room", "position": "after:sessions" },
+  "entry": "dist/index.js",
+  "css": "dist/style.css",
+  "api": "plugin_api.py"
+}
