@@ -85,109 +85,157 @@ function assertArray(value, label, max = 1000) {
   return value
 }
 
+function requireSafeId(value, prefix, label = prefix) {
+  const text = clampText(value, '')
+  if (!/^[A-Za-z0-9_.:-]{1,96}$/.test(text)) throw new Error(`invalid ${label} id`)
+  return text
+}
+
+function safeOptionalId(value, prefix, label = prefix) {
+  if (value == null) return null
+  return requireSafeId(value, prefix, label)
+}
+
+function safeNumber(value, label, nullable = false) {
+  if (value == null && nullable) return null
+  if (!Number.isFinite(value)) throw new Error(`${label} must be finite`)
+  return Number(value)
+}
+
+function normalizeTaskCounts(value) {
+  if (value == null) return Object.freeze({})
+  const object = assertObject(value, 'taskCounts')
+  const output = {}
+  for (const [key, count] of Object.entries(object)) {
+    const safeKey = clampText(key, '').toLowerCase()
+    if (!/^[a-z_:-]{1,32}$/.test(safeKey) || !Number.isFinite(count)) throw new Error('taskCounts must contain finite numeric safe keys')
+    output[safeKey] = Number(count)
+  }
+  return Object.freeze(output)
+}
+
+function normalizeRunStatus(value, known) {
+  const raw = clampText(value, 'unknown').toLowerCase()
+  if (known === false) return 'unknown'
+  if (!/^[a-z_:-]{1,32}$/.test(raw)) throw new Error('invalid run status')
+  return raw
+}
+
+function assertUnique(id, seen, label) {
+  if (seen.has(id)) throw new Error(`duplicate ${label} id ${id}`)
+  seen.add(id)
+}
+
 function normalizeSnapshot(raw) {
   const value = assertObject(raw, 'snapshot')
   if (value.schemaVersion !== SCHEMA_VERSION) throw new Error('unsupported schema version')
   if (value.ordering !== 'createdAt,id') throw new Error('unsupported ordering')
-  const board = safeId(value.board || 'default', 'board')
-  const profileScope = value.profile == null ? null : safeId(value.profile, 'profile')
+  const board = requireSafeId(value.board || 'default', 'board', 'board')
+  const profileScope = safeOptionalId(value.profile, 'profile', 'profile')
+  const profileSeen = new Set()
   const profiles = assertArray(value.profiles, 'profiles', 500).map((item) => {
     const p = assertObject(item, 'profile')
-    return Object.freeze({
-      id: safeId(p.name, 'profile'),
-      label: redactText(p.name, 'Unknown agent'),
-      onDisk: Boolean(p.onDisk),
-      taskCounts: Object.freeze({ ...(p.taskCounts || {}) })
-    })
+    const id = requireSafeId(p.name, 'profile', 'profile')
+    assertUnique(id, profileSeen, 'profile')
+    return Object.freeze({ id, label: redactText(p.name, 'Unknown agent'), onDisk: Boolean(p.onDisk), taskCounts: normalizeTaskCounts(p.taskCounts) })
   })
   const profileIds = new Set(profiles.map((p) => p.id))
+  const taskSeen = new Set()
   const tasks = assertArray(value.tasks, 'tasks', 1000).map((item) => {
     const t = assertObject(item, 'task')
+    const id = requireSafeId(t.id, 'task', 'task')
+    assertUnique(id, taskSeen, 'task')
     const status = normalizeStatus(t.status, t.statusKnown)
-    const assigneeId = t.assignee == null ? null : safeId(t.assignee, 'profile')
+    const assigneeId = safeOptionalId(t.assignee, 'profile', 'profile')
     if (assigneeId) profileIds.add(assigneeId)
-    return Object.freeze({
-      id: safeId(t.id, 'task'),
-      board,
-      title: redactText(t.title, 'Untitled task'),
-      status,
-      group: STATE_GROUPS[status] || 'unknown',
-      assigneeId,
-      priority: Number.isFinite(t.priority) ? Number(t.priority) : 0,
-      createdAt: Number.isFinite(t.createdAt) ? Number(t.createdAt) : 0,
-      startedAt: Number.isFinite(t.startedAt) ? Number(t.startedAt) : null,
-      completedAt: Number.isFinite(t.completedAt) ? Number(t.completedAt) : null,
-      currentRunId: Number.isFinite(t.currentRunId) ? Number(t.currentRunId) : null
-    })
+    return Object.freeze({ id, board, title: redactText(t.title, 'Untitled task'), status, group: STATE_GROUPS[status] || 'unknown', assigneeId, blockedKind: t.blockedKind == null ? null : clampText(t.blockedKind, 'unknown').toLowerCase(), priority: Number.isFinite(t.priority) ? Number(t.priority) : 0, createdAt: safeNumber(t.createdAt, 'task.createdAt'), startedAt: safeNumber(t.startedAt, 'task.startedAt', true), completedAt: safeNumber(t.completedAt, 'task.completedAt', true), currentRunId: safeNumber(t.currentRunId, 'task.currentRunId', true) })
   })
   const taskIds = new Set(tasks.map((t) => t.id))
+  const runSeen = new Set()
   const runs = assertArray(value.runs, 'runs', 1500).map((item) => {
     const r = assertObject(item, 'run')
-    return Object.freeze({
-      id: safeId(r.id, 'run'),
-      taskId: safeId(r.taskId, 'task'),
-      profileId: r.profile == null ? 'profile:unknown' : safeId(r.profile, 'profile'),
-      status: clampText(r.status, 'unknown').toLowerCase(),
-      statusKnown: r.statusKnown !== false,
-      startedAt: Number.isFinite(r.startedAt) ? Number(r.startedAt) : 0,
-      endedAt: Number.isFinite(r.endedAt) ? Number(r.endedAt) : null,
-      outcome: r.outcome == null ? null : clampText(r.outcome, 'unknown')
-    })
+    const id = requireSafeId(r.id, 'run', 'run')
+    assertUnique(id, runSeen, 'run')
+    return Object.freeze({ id, taskId: requireSafeId(r.taskId, 'task', 'task'), profileId: r.profile == null ? 'profile:unknown' : requireSafeId(r.profile, 'profile', 'profile'), status: normalizeRunStatus(r.status, r.statusKnown), statusKnown: r.statusKnown !== false, startedAt: safeNumber(r.startedAt, 'run.startedAt'), endedAt: safeNumber(r.endedAt, 'run.endedAt', true), outcome: r.outcome == null ? null : clampText(r.outcome, 'unknown') })
   }).filter((run) => taskIds.has(run.taskId))
-  return Object.freeze({
-    schemaVersion: SCHEMA_VERSION,
-    board,
-    profile: profileScope,
-    revision: Number.isFinite(value.revision) ? Number(value.revision) : 0,
-    ordering: 'createdAt,id',
-    hasMore: Boolean(value.hasMore),
-    nextCursor: value.nextCursor == null ? null : clampText(value.nextCursor, ''),
-    profiles: Object.freeze(profiles),
-    tasks: Object.freeze(tasks),
-    runs: Object.freeze(runs),
-    profileIds: Object.freeze([...profileIds])
+  return Object.freeze({ schemaVersion: SCHEMA_VERSION, board, profile: profileScope, revision: safeNumber(value.revision, 'revision'), ordering: 'createdAt,id', hasMore: Boolean(value.hasMore), nextCursor: value.nextCursor == null ? null : requireSafeId(value.nextCursor, 'cursor', 'cursor'), profiles: Object.freeze(profiles), tasks: Object.freeze(tasks), runs: Object.freeze(runs), profileIds: Object.freeze([...profileIds]) })
+}
+
+function assertPageScope(page, scope, index) {
+  if (page.board !== scope.board) throw new Error(`inconsistent board on page ${index}`)
+  if ((page.profile || null) !== (scope.profile || null)) throw new Error(`inconsistent profile on page ${index}`)
+  if (page.ordering !== 'createdAt,id') throw new Error('inconsistent ordering')
+}
+
+function mergeSnapshotPages(rawPages, scope = {}) {
+  if (!rawPages.length) throw new Error('snapshot returned no pages')
+  const pages = rawPages.map((raw) => normalizeSnapshot(raw))
+  const expected = { board: scope.board || pages[0].board, profile: scope.profile ?? pages[0].profile }
+  const merged = { ...pages[0], profiles: [], tasks: [], runs: [], profileIds: [], hasMore: false, nextCursor: null }
+  const profileSeen = new Set(), taskSeen = new Set(), runSeen = new Set(), profileIds = new Set()
+  let revision = pages[0].revision
+  pages.forEach((page, index) => {
+    assertPageScope(page, expected, index)
+    if (page.revision < revision) throw new Error('revision moved backwards between pages')
+    revision = page.revision
+    if (index < pages.length - 1 && (!page.hasMore || !page.nextCursor)) throw new Error('missing cursor before final page')
+    if (index === pages.length - 1 && page.hasMore && !page.nextCursor) throw new Error('hasMore requires cursor')
+    for (const p of page.profiles) { if (!profileSeen.has(p.id)) { profileSeen.add(p.id); merged.profiles.push(p); profileIds.add(p.id) } }
+    for (const t of page.tasks) { assertUnique(t.id, taskSeen, 'task'); merged.tasks.push(t); if (t.assigneeId) profileIds.add(t.assigneeId) }
+    for (const r of page.runs) { assertUnique(r.id, runSeen, 'run'); merged.runs.push(r); profileIds.add(r.profileId) }
+    merged.hasMore = page.hasMore; merged.nextCursor = page.nextCursor
   })
+  return Object.freeze({ ...merged, board: expected.board, profile: expected.profile, revision, profiles: Object.freeze(merged.profiles), tasks: Object.freeze(merged.tasks), runs: Object.freeze(merged.runs), profileIds: Object.freeze([...profileIds]) })
 }
 
-async function readSnapshotPage(cursor) {
-  const page = await host.request('kanban.snapshot.v1', { cursor: cursor || undefined, limit: PAGE_LIMIT })
-  return normalizeSnapshot(page)
+async function readSnapshotPage(scope, cursor) {
+  return host.request(SNAPSHOT_METHOD, { board: scope.board, profile: scope.profile || undefined, cursor: cursor || undefined, limit: PAGE_LIMIT })
 }
 
-async function readSnapshot() {
+async function readSnapshot(scope = {}) {
   let cursor = null
-  let merged = null
+  const pages = []
   for (let pageIndex = 0; pageIndex < MAX_PAGES; pageIndex += 1) {
-    const page = await readSnapshotPage(cursor)
-    if (!merged) merged = { ...page, profiles: [...page.profiles], tasks: [...page.tasks], runs: [...page.runs] }
-    else {
-      merged.profiles.push(...page.profiles)
-      merged.tasks.push(...page.tasks)
-      merged.runs.push(...page.runs)
-      merged.hasMore = page.hasMore
-      merged.nextCursor = page.nextCursor
-      merged.revision = page.revision
-    }
-    if (!page.hasMore || !page.nextCursor) break
-    cursor = page.nextCursor
+    const rawPage = await readSnapshotPage(scope, cursor)
+    const checked = normalizeSnapshot(rawPage)
+    pages.push(rawPage)
+    if (!checked.hasMore || !checked.nextCursor) break
+    cursor = checked.nextCursor
   }
-  return normalizeSnapshot(merged)
+  return mergeSnapshotPages(pages, scope)
 }
 
-function queryKey(profile, gateway) {
-  return ['pixel-agents', 'snapshot', SCHEMA_VERSION, profile || 'default-profile', gateway || 'unknown-gateway']
+function queryKey(board, profile, gateway) {
+  return ['pixel-agents', 'snapshot', SCHEMA_VERSION, board || 'default', profile || 'all-profiles', gateway || 'unknown-gateway']
 }
 
-function usePixelAgentsData() {
+function isSafeEventForScope(payload, scope) {
+  if (!payload || payload.schemaVersion !== SCHEMA_VERSION || typeof payload.board !== 'string') return false
+  const board = safeId(payload.board, 'board')
+  const profile = payload.profile == null ? null : safeId(payload.profile, 'profile')
+  return board === scope.board && (profile == null || profile === (scope.profile || null))
+}
+
+function freshnessState({ gateway, lastSuccessAt, consecutiveFailures, now }) {
+  if (gateway !== 'open') return { label: 'disconnected', kind: 'danger' }
+  if (!lastSuccessAt) return { label: 'loading', kind: 'info' }
+  if (consecutiveFailures >= 2 || now - lastSuccessAt > 30) return { label: 'stale', kind: 'warning' }
+  if (consecutiveFailures > 0) return { label: 'last-good', kind: 'warning' }
+  return { label: 'fresh', kind: 'success' }
+}
+
+function usePixelAgentsData(boardOverride) {
   const gateway = useValue(host.state.gateway)
   const profile = useValue(host.state.profile)
+  const boardState = host.state.board ? useValue(host.state.board) : 'default'
+  const board = boardOverride || boardState || 'default'
   return useQuery({
-    queryKey: queryKey(profile, gateway),
-    queryFn: readSnapshot,
+    queryKey: queryKey(board, profile, gateway),
+    queryFn: () => readSnapshot({ board, profile }),
     enabled: gateway === 'open',
-    refetchInterval: gateway === 'open' ? 5000 : false,
-    staleTime: 10000,
-    keepPreviousData: false
+    refetchInterval: gateway === 'open' ? 30000 : false,
+    staleTime: 30000,
+    keepPreviousData: true
   })
 }
 
@@ -195,29 +243,30 @@ function taskRecency(task) {
   return task.startedAt || task.completedAt || task.createdAt || 0
 }
 
+function runRecency(run) { return run.startedAt || run.endedAt || 0 }
+
 function buildAgents(snapshot) {
   if (!snapshot) return []
   const byProfile = new Map()
-  for (const id of snapshot.profileIds) byProfile.set(id, { id, label: id === 'profile:unknown' ? 'Unknown agent' : redactText(id, id), tasks: [], runs: [] })
   for (const p of snapshot.profiles) byProfile.set(p.id, { id: p.id, label: p.label, tasks: [], runs: [] })
   for (const task of snapshot.tasks) {
-    const id = task.assigneeId || 'profile:unknown'
-    if (!byProfile.has(id)) byProfile.set(id, { id, label: id === 'profile:unknown' ? 'Unknown agent' : redactText(id, id), tasks: [], runs: [] })
-    byProfile.get(id).tasks.push(task)
+    if (!task.assigneeId) continue
+    if (!byProfile.has(task.assigneeId)) byProfile.set(task.assigneeId, { id: task.assigneeId, label: redactText(task.assigneeId, task.assigneeId), tasks: [], runs: [] })
+    byProfile.get(task.assigneeId).tasks.push(task)
   }
   for (const run of snapshot.runs) {
-    if (!byProfile.has(run.profileId)) byProfile.set(run.profileId, { id: run.profileId, label: redactText(run.profileId, run.profileId), tasks: [], runs: [] })
-    byProfile.get(run.profileId).runs.push(run)
+    const id = run.profileId
+    if (id === 'profile:unknown') continue
+    if (!byProfile.has(id)) byProfile.set(id, { id, label: redactText(id, id), tasks: [], runs: [] })
+    byProfile.get(id).runs.push(run)
   }
   return [...byProfile.values()].map((agent) => {
-    const primaryTask = [...agent.tasks].sort((a, b) => {
-      const sa = SEVERITY[a.group] ?? 9
-      const sb = SEVERITY[b.group] ?? 9
-      if (sa !== sb) return sa - sb
-      return taskRecency(b) - taskRecency(a) || a.id.localeCompare(b.id)
-    })[0] || null
+    const runningRuns = agent.runs.filter((r) => r.endedAt == null && r.status === 'running').sort((a, b) => runRecency(b) - runRecency(a) || String(a.id).localeCompare(String(b.id)))
+    const runTaskIds = new Set(runningRuns.map((r) => r.taskId))
+    const activeTasks = agent.tasks.filter((t) => runTaskIds.has(t.id) || !['done', 'archived'].includes(t.status))
+    const primaryTask = (runningRuns.length ? agent.tasks.find((t) => t.id === runningRuns[0].taskId) : null) || [...activeTasks].sort((a, b) => (SEVERITY[a.group] ?? 9) - (SEVERITY[b.group] ?? 9) || taskRecency(b) - taskRecency(a) || a.id.localeCompare(b.id))[0] || null
     const group = primaryTask ? primaryTask.group : 'idle'
-    return Object.freeze({ ...agent, group, primaryTask, runCount: agent.runs.filter((r) => r.endedAt == null).length })
+    return Object.freeze({ ...agent, group, primaryTask, currentTasks: Object.freeze(activeTasks), runCount: runningRuns.length })
   }).sort((a, b) => (SEVERITY[a.group] ?? 9) - (SEVERITY[b.group] ?? 9) || a.id.localeCompare(b.id))
 }
 
@@ -233,14 +282,15 @@ function applyFilters(agents, filters) {
   })
 }
 
-function stateTotals(agents) {
+function stateTotals(agents, tasks = []) {
   const totals = { all: agents.length, running: 0, queued: 0, blocked: 0, done: 0, unknown: 0, idle: 0 }
   for (const agent of agents) totals[agent.group] = (totals[agent.group] || 0) + 1
+  for (const task of tasks) if (!task.assigneeId) totals[task.group] = (totals[task.group] || 0) + 1
   return totals
 }
 
 function officeLayout(agents) {
-  const visible = agents.slice(0, MAX_OFFICE_OCCUPANTS - 1)
+  const visible = agents.length > MAX_OFFICE_OCCUPANTS ? agents.slice(0, MAX_OFFICE_OCCUPANTS - 1) : agents.slice(0, MAX_OFFICE_OCCUPANTS)
   const overflow = Math.max(0, agents.length - visible.length)
   const lanes = { running: 0, queued: 1, blocked: 2, idle: 3, done: 3, unknown: 3 }
   const tiles = visible.map((agent, index) => Object.freeze({
@@ -255,8 +305,9 @@ function officeLayout(agents) {
 }
 
 function FreshnessBadge({ query, gateway }) {
-  const kind = gateway !== 'open' ? 'danger' : query.isError ? 'warning' : query.isFetching ? 'info' : 'success'
-  const label = gateway !== 'open' ? 'disconnected' : query.isError ? 'stale' : query.isFetching ? 'refreshing' : 'fresh'
+  const freshness = freshnessState({ gateway, lastSuccessAt: query.dataUpdatedAt ? Math.floor(query.dataUpdatedAt / 1000) : (query.data ? Math.floor(Date.now() / 1000) : 0), consecutiveFailures: query.isError ? 2 : 0, now: Math.floor(Date.now() / 1000) })
+  const kind = query.isFetching ? 'info' : freshness.kind
+  const label = query.isFetching ? 'refreshing' : freshness.label
   return jsxs('div', { className: 'flex items-center gap-2 text-xs text-(--ui-text-secondary)', children: [jsx(StatusDot, { status: kind }), jsx('span', { children: label })] })
 }
 
@@ -266,7 +317,7 @@ function PixelAgentsPage() {
   const [filters, setFilters] = useState({ state: 'all', search: '' })
   const agents = useMemo(() => buildAgents(query.data), [query.data])
   const filtered = useMemo(() => applyFilters(agents, filters), [agents, filters])
-  const totals = stateTotals(agents)
+  const totals = stateTotals(agents, query.data?.tasks || [])
   if (gateway !== 'open') return jsx(ErrorState, { title: 'Pixel Agents unavailable', description: 'Hermes gateway is disconnected. No fallback data path is used.' })
   if (query.isLoading && !query.data) return jsx('div', { className: 'p-4', children: jsx(Skeleton, { className: 'h-40 w-full' }) })
   if (query.isError && !query.data) return jsx(ErrorState, { title: 'Snapshot unavailable', description: 'The approved read-only Kanban snapshot could not be read.' })
@@ -306,7 +357,7 @@ function registerInvalidationListener() {
   return host.onEvent(CHANGE_EVENT, (event) => {
     const payload = event?.payload || event
     if (!payload || payload.schemaVersion !== SCHEMA_VERSION || typeof payload.board !== 'string') return
-    queryClient.invalidateQueries({ queryKey: ['pixel-agents', 'snapshot'] })
+    if (isSafeEventForScope(payload, { board: payload.board, profile: payload.profile || null })) queryClient.invalidateQueries({ queryKey: ['pixel-agents', 'snapshot', SCHEMA_VERSION, payload.board, payload.profile || 'all-profiles'] })
   })
 }
 
