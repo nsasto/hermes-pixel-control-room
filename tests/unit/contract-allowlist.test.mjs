@@ -4,8 +4,7 @@ import { join } from 'node:path'
 
 const repoRoot = new URL('../..', import.meta.url).pathname
 const approvedReadMethods = new Set([
-  // Intentionally empty until Hermes core adds a sanctioned read-only snapshot RPC.
-  // Example future shape: 'kanban.snapshot.v1'. Do not add renderer-invented names.
+  'kanban.snapshot.v1'
 ])
 
 const forbiddenMethodFragments = [

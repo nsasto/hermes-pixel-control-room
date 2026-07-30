@@ -1,8 +1,8 @@
 # Hermes read-only Kanban/delegation contract verification
 
-Verification date: 2026-07-30T08:47:53Z
+Verification date: 2026-07-30T12:22:00Z
 Repository baseline: `main` with clean working tree before Phase 0.
-Installed Hermes: `Hermes Agent v0.19.0 (2026.7.20) · upstream c55159f1 · local 1f1b92a1 (+2 carried commits)`
+Installed Hermes: `Hermes Agent v0.19.0 (2026.7.20) · upstream 81aacdef · local a2f3626d (+2 carried commits)`
 Install directory inspected: `/home/zoe/.hermes/hermes-agent`
 Active profile home: `/home/zoe/.hermes/profiles/felix`
 
@@ -10,11 +10,11 @@ Clean-room boundary: this research used only the current repository, official He
 
 ## Result
 
-NO-GO for Pixel Agents V1 Phase 1 on the currently installed Hermes Desktop/gateway.
+GO for Pixel Agents V1 Phase 1 on the currently installed Hermes Desktop/gateway.
 
-The Desktop plugin SDK exposes a sanctioned authenticated JSON-RPC bridge via `host.request(method, params)` and gateway events via `host.onEvent(type, fn)`, but the installed gateway method registry does not expose a sanctioned read-only Kanban/delegation snapshot suitable for a disk plugin. The only nearby live read methods found are generic/non-Kanban (`agents.list`, `session.active_list`) and they do not provide task lifecycle snapshot data.
+The Desktop plugin SDK exposes a sanctioned authenticated JSON-RPC bridge via `host.request(method, params)` and gateway events via `host.onEvent(type, fn)`. After Hermes core commit `a2f3626d`, the installed gateway method registry exposes the sanctioned read-only Kanban snapshot method `kanban.snapshot.v1`, and SDK docs define the invalidation-only event `kanban.changed.v1`.
 
-Per the clean-room spec, do not continue by adding a plugin backend, HTTP server, direct SQLite/file access, shell/CLI bridge, polling process, transcript/log parser, or workaround. Add a Hermes-core read RPC first, then resume implementation.
+Per the clean-room spec, Pixel Agents V1 may now proceed against exactly that read contract. It still must not add a plugin backend, HTTP server, direct SQLite/file access, shell/CLI bridge, polling process, transcript/log parser, or workaround.
 
 ## Desktop SDK surface verified
 
@@ -57,18 +57,12 @@ The gateway dispatches JSON-RPC by exact method name through `_methods`; unknown
 A live installed-registry probe loaded the current gateway method registry and tested likely Kanban/delegation snapshot names. Redacted output:
 
 ```text
-methods_count 141
-kanban.snapshot    -> error -32601 unknown method: kanban.snapshot
-kanban.list        -> error -32601 unknown method: kanban.list
-kanban.board       -> error -32601 unknown method: kanban.board
-kanban.tasks       -> error -32601 unknown method: kanban.tasks
-delegation.snapshot -> error -32601 unknown method: delegation.snapshot
-agents.snapshot    -> error -32601 unknown method: agents.snapshot
-agents.list        -> result {"processes": []}
-session.active_list -> result {"sessions": []}
+methods_count 142
+kanban.snapshot.v1 registered True
+kanban methods ['kanban.snapshot.v1']
 ```
 
-The full installed registry contained no method starting with `kanban.` and no delegation/Kanban snapshot method. `agents.list` is not a Kanban/delegation task lifecycle snapshot; it returned only an empty process list in this profile. `session.active_list` is a live chat/session registry, not board/task state.
+The full installed registry contains exactly one `kanban.` read method: `kanban.snapshot.v1`. No `kanban.*` mutation methods are part of the Desktop gateway contract.
 
 ## Existing Kanban dashboard plugin is not acceptable for V1
 
@@ -85,13 +79,13 @@ That route is a dashboard/plugin backend over HTTP/WebSocket and is intentionall
 
 | Area | Verified answer |
 |---|---|
-| Read method | No existing sanctioned read-only Kanban/delegation snapshot RPC was found in the installed gateway registry. Required core change: add a narrow read method such as `kanban.snapshot.v1` or `pixel_agents.snapshot.v1`; name must be finalized in Hermes core, not invented in the renderer. |
-| Request params | Unresolved because no method exists. Required minimum: `{ board?: string, profile?: string, cursor?: string, limit?: number }`, with documented default board/profile semantics and maximum page size. |
-| Response schema | Unresolved because no method exists. Required minimum is the Phase 0 proposed schema or equivalent, excluding bodies, comments, results, raw errors, attachments, workspace paths, prompts, tool payloads, transcripts, env, and command lines. |
-| Events | No Kanban lifecycle event type/envelope is exposed through the gateway registry/docs for desktop plugins. Existing generic gateway event envelope is `{ type, payload?, profile?, session_id? }`; documented built-ins include session/message/tool/status events, not Kanban task/run lifecycle invalidations. Required core change: invalidation-only lifecycle event such as `{ schemaVersion, board, entityType, entityId, revision }`. |
-| Reconnect | SDK client rejects pending calls when the WebSocket closes and callers can reconnect/retry. No Kanban-specific dropped-event recovery can be proven because no snapshot/event contract exists. Required behavior: polling snapshot remains correctness path after reconnect/profile switch/board switch/OAuth remote use. |
+| Read method | `kanban.snapshot.v1`, exposed through the existing authenticated Desktop JSON-RPC bridge. |
+| Request params | `{ board?: string, profile?: string, cursor?: string, limit?: number }`; omitted board selects active board; omitted profile includes all assignees; default limit 100, max 200; cursor is opaque and scope-bound. |
+| Response schema | Schema version 1 minimized snapshot: `board`, `profile`, `revision`, `ordering: 'createdAt,id'`, `limit`, `hasMore`, `nextCursor`, `profiles`, `tasks`, and `runs`. It excludes bodies, comments, results, raw errors, attachments, workspace paths, prompts, tool payloads, transcripts, env, command lines, recipient IDs, and private config. |
+| Events | `kanban.changed.v1`, invalidation only: `{ schemaVersion, board, entityType: 'task'|'run'|'profile', entityId, revision }`. |
+| Reconnect | Polling snapshot remains authoritative; events may be dropped/coalesced and only trigger query invalidation/refetch. |
 | Authorization | `host.request` uses the desktop app's existing gateway WebSocket bridge; no extra network surface is added by `host.request` itself. The missing part is the authorized read method. |
-| Read-only boundary | Added a synthetic allowlist test in `tests/unit/contract-allowlist.test.mjs`; it currently encodes the absence of an approved method. It will fail if production code introduces a non-approved method string or forbidden API/import. |
+| Read-only boundary | `tests/unit/contract-allowlist.test.mjs` statically allowlists only `kanban.snapshot.v1` and fails if production code introduces a non-approved method string or forbidden API/import. |
 
 ## Field-level minimization requirement for the future core RPC
 
@@ -106,7 +100,7 @@ It must exclude task bodies, comments, results, summaries beyond short allowlist
 
 ## Recommendation
 
-NO-GO for Phase 1 until Hermes core exposes and documents a sanctioned read-only snapshot RPC plus lifecycle invalidation events.
+GO for Phase 1 with the exact `kanban.snapshot.v1` / `kanban.changed.v1` contract above. Any drift, missing method, missing event, or broader payload is an automatic NO-SHIP until revalidated.
 
 Precise build-card recommendation:
 

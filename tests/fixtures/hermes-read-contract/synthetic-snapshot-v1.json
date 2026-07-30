@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-30T00:00:00Z",
+  "board": "default",
+  "profile": null,
+  "revision": 7,
+  "ordering": "createdAt,id",
+  "limit": 100,
+  "hasMore": false,
   "nextCursor": null,
   "profiles": [
-    { "id": "profile:felix", "displayName": "Felix" }
+    { "name": "synthetic-felix", "onDisk": true, "taskCounts": { "running": 1 } }
   ],
   "tasks": [
     {
       "id": "t_synthetic001",
-      "board": "default",
       "title": "Synthetic safe task title",
+      "assignee": "synthetic-felix",
       "status": "running",
-      "assigneeId": "profile:felix",
-      "updatedAt": "2026-07-30T00:00:00Z",
-      "blockedKind": null
+      "statusKnown": true,
+      "priority": 0,
+      "createdAt": 1785369600,
+      "startedAt": 1785369660,
+      "completedAt": null,
+      "currentRunId": 45
     }
   ],
   "runs": [
     {
-      "id": "45",
+      "id": 45,
       "taskId": "t_synthetic001",
-      "profileId": "profile:felix",
+      "profile": "synthetic-felix",
       "status": "running",
-      "startedAt": "2026-07-30T00:00:00Z",
-      "endedAt": null
+      "statusKnown": true,
+      "startedAt": 1785369660,
+      "endedAt": null,
+      "outcome": null
     }
   ]
 }
