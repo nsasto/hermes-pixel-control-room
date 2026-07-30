@@ -6,6 +6,7 @@ The project is currently in the planning phase. See:
 
 - [`DECISION-MAP.md`](./DECISION-MAP.md) for settled decisions and remaining investigation
 - [`CONTEXT.md`](./CONTEXT.md) for the project's domain language
+- [`PROVISIONAL-PLAN.md`](./PROVISIONAL-PLAN.md) for a concrete implementation direction and validation risks
 
 ## Pixel art assets
 
