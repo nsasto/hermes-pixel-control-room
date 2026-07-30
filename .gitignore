@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+
+# Build and test output
+dist/
+build/
+coverage/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Purchased/private artwork
+assets/private/
+assets/source/
+
+# Runtime state
+*.log
+*.pid
+*.sqlite
+*.sqlite3
+*.db
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
