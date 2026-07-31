@@ -1,0 +1,42 @@
+{
+  "id": "modern-corporate-v1",
+  "label": "Modern Corporate Office",
+  "description": "Local office theme for the first Control Room release.",
+  "sourceRoot": "assets/pixel_art/Modern_Corporate_Office_Pixel_Art_Asset_Pack_v1.0",
+  "perspective": "top-down",
+  "base": {
+    "width": 1536,
+    "height": 1024,
+    "emptyScene": "01_Scenes/Modern_Corporate_Office_Empty.png",
+    "referenceScene": "01_Scenes/Modern_Corporate_Office_With_Characters.png"
+  },
+  "characters": [
+    "01_Black_Shirt_Front_Seated.png",
+    "02_Black_Shirt_Back_Seated.png",
+    "03_Blue_Shirt_Front_Seated.png",
+    "04_Blue_Shirt_Back_Seated.png",
+    "05_Green_Shirt_Front_Seated.png",
+    "06_Green_Shirt_Back_Seated.png",
+    "07_Receptionist_Back_Seated.png",
+    "08_Receptionist_Front_Seated.png"
+  ],
+  "animation": {
+    "kind": "optional-idle-reference",
+    "asset": "04_Animation/Modern_Corporate_Office_Head_Bob.gif",
+    "authoritative": false
+  },
+  "stations": [
+    "reception-main", "workstation-*", "focus-office", "boardroom",
+    "research-console", "archive", "waiting-lounge", "approval-desk", "repair-bay"
+  ],
+  "rendering": {
+    "filter": "nearest-neighbor",
+    "integerScalePreferred": true,
+    "preserveAlpha": true
+  },
+  "license": {
+    "localOnly": true,
+    "redistributionAllowed": false,
+    "documentation": "05_Documentation/LICENSE_EN.txt"
+  }
+}

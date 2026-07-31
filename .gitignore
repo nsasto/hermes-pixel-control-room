@@ -5,6 +5,8 @@ venv/
 
 # Build and test output
 dist/
+!dashboard/dist/
+!dashboard/dist/**
 build/
 coverage/
 .pytest_cache/
