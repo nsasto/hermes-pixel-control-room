@@ -1,16 +1,16 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 export async function loadPluginCore() {
-  const root = new URL('../..', import.meta.url).pathname
+  const root = fileURLToPath(new URL('../..', import.meta.url))
   const source = readFileSync(join(root, 'src/plugin.js'), 'utf8')
   const transformed = source
-    .replace(/import \{[\s\S]*?\} from '@hermes\/plugin-sdk'\n/, `const Button = 'button'\nconst EmptyState = 'empty-state'\nconst ErrorState = 'error-state'\nconst PALETTE_AREA = 'palette'\nconst PANES_AREA = 'panes'\nconst ROUTES_AREA = 'routes'\nconst ScrollArea = 'scroll-area'\nconst SearchField = 'search-field'\nconst SIDEBAR_NAV_AREA = 'sidebar'\nconst Skeleton = 'skeleton'\nconst StatusDot = 'status-dot'\nconst host = globalThis.__pixelHost\nconst queryClient = globalThis.__pixelQueryClient\nconst relativeTime = (d) => d.toISOString()\nconst useQuery = globalThis.__pixelUseQuery\nconst useValue = (v) => typeof v === 'function' ? v() : v\n`)
-    .replace(/import \{ useMemo, useState \} from 'react'\n/, `const useMemo = (fn) => fn()\nconst useState = (initial) => [initial, () => {}]\n`)
-    .replace(/import \{ jsx, jsxs \} from 'react\/jsx-runtime'\n/, `const jsx = (type, props, key) => ({ type, props: props || {}, key })\nconst jsxs = jsx\n`)
+    .replace(/import \{[\s\S]*?\} from '@hermes\/plugin-sdk'\r?\n/, `const Button = 'button'\nconst EmptyState = 'empty-state'\nconst ErrorState = 'error-state'\nconst PALETTE_AREA = 'palette'\nconst PANES_AREA = 'panes'\nconst ROUTES_AREA = 'routes'\nconst ScrollArea = 'scroll-area'\nconst SearchField = 'search-field'\nconst SIDEBAR_NAV_AREA = 'sidebar'\nconst Skeleton = 'skeleton'\nconst StatusDot = 'status-dot'\nconst host = globalThis.__pixelHost\nconst queryClient = globalThis.__pixelQueryClient\nconst relativeTime = (d) => d.toISOString()\nconst useQuery = globalThis.__pixelUseQuery\nconst useValue = (v) => typeof v === 'function' ? v() : v\n`)
+    .replace(/import \{ useMemo, useState \} from 'react'\r?\n/, `const useMemo = (fn) => fn()\nconst useState = (initial) => [initial, () => {}]\n`)
+    .replace(/import \{ jsx, jsxs \} from 'react\/jsx-runtime'\r?\n/, `const jsx = (type, props, key) => ({ type, props: props || {}, key })\nconst jsxs = jsx\n`)
     .replace(/export default \{/, 'const pluginDefault = {')
-    + `\nexport { SNAPSHOT_METHOD, CHANGE_EVENT, queryKey, normalizeSnapshot, mergeSnapshotPages, readSnapshot, buildAgents, applyFilters, stateTotals, officeLayout, freshnessState, isSafeEventForScope, registerInvalidationListener, visibleAgentWindow, resolveSelectedAgentId, pluginDefault }\n`
+    + `\nexport { SNAPSHOT_METHOD, CHANGE_EVENT, queryKey, normalizeSnapshot, mergeSnapshotPages, readSnapshot, buildAgents, applyFilters, stateTotals, officeLayout, assignThemeVisuals, freshnessState, isSafeEventForScope, registerInvalidationListener, visibleAgentWindow, resolveSelectedAgentId, pluginDefault }\n`
   const encoded = Buffer.from(transformed, 'utf8').toString('base64')
   return import(`data:text/javascript;base64,${encoded}#${Date.now()}-${Math.random()}`)
 }

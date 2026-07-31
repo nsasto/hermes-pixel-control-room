@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-const root = new URL('../..', import.meta.url).pathname
+import { fileURLToPath } from 'node:url'
+const root = fileURLToPath(new URL('../..', import.meta.url))
 const dist = join(root, 'dist/plugin.js')
 const source = join(root, 'src/plugin.js')
 const text = readFileSync(existsSync(dist) ? dist : source, 'utf8')

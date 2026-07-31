@@ -1,5 +1,8 @@
 {
   "version": 1,
-  "approvedOutputs": [],
-  "note": "V1 ships no third-party or legacy assets; office uses DOM/CSS geometry only."
+  "approvedOutputs": [
+    "dist/themes/modern-corporate-v1/office-empty.png",
+    "dist/themes/modern-corporate-v1/characters/*.png"
+  ],
+  "note": "Licensed theme files are copied only into ignored local build output and are never committed."
 }
