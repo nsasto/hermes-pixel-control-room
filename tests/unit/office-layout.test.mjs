@@ -7,7 +7,7 @@ for (const lane of ['running','queued','blocked','idle']) assert.ok(src.includes
 assert.ok(src.includes("label: `+${overflow}`"), 'office overflow aggregate exists')
 
 test('theme visuals place the Main Agent at reception with the receptionist identity', async () => {
-  const { assignThemeVisuals } = await loadPluginCore()
+  const { assignThemeVisuals, resolveMainProfileId } = await loadPluginCore()
   const theme = {
     characters: [
       { role: 'executive', asset: './executive.png' },
@@ -29,4 +29,6 @@ test('theme visuals place the Main Agent at reception with the receptionist iden
   )
   assert.equal(visuals[1].character.role, 'executive')
   assert.equal(visuals[1].station.id, 'workstation-1')
+  assert.equal(resolveMainProfileId({ profiles: [{ id: 'research', label: 'Research' }, { id: 'main', label: 'Main Agent' }] }, 'research'), 'main')
+  assert.equal(resolveMainProfileId({ profiles: [{ id: 'custom', label: 'Orchestrator' }, { id: 'main', label: 'Main Agent' }] }, 'main', 'custom'), 'custom')
 })

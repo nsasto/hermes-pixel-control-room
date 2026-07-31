@@ -17,9 +17,14 @@
 
 ## Runtime package contents
 
-- `dist/plugin.js` only.
+- The original clean-room V1 review covered `dist/plugin.js` only.
+- Theme-enabled local builds additionally contain `dist/theme-catalog.json`, the
+  Modern Corporate Office empty scene, and eight individual character PNGs
+  under ignored `dist/themes/` output.
 - No backend `plugin_api.py` or dashboard manifest.
-- No third-party assets, source maps, downloaded archives, fixtures, binaries, or remote URLs.
+- No source maps, downloaded archives, fixtures, or Hermes private data.
+- The licensed artwork is user-supplied, hash-pinned, copied only during a local
+  build, excluded from Git, and must not be included in a public release archive.
 
 ## Boundary checks
 
@@ -30,6 +35,10 @@
 
 ## Result
 
-Clean-room status: PASS for the repository implementation prepared for independent review.
+Clean-room status: PASS for the original asset-free V1 implementation. The
+theme-enabled extension passes its separate local-only boundary review: inputs
+are declared and hash-pinned, generated outputs are verified, licensed binaries
+remain ignored, and public release archives must remain asset-free. This result
+does not authorize redistribution of the purchased artwork.
 
 Deployment status: NOT DEPLOYED. Installing into Nathan's active Hermes profile remains outside this implementation task and should happen only after independent SHIP review.

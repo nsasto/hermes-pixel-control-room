@@ -29,6 +29,7 @@ const MAX_TEXT = 120
 const MAX_OFFICE_OCCUPANTS = 24
 const THEME_TOKEN_SENTINELS = ['var(--ui-text-secondary)', 'var(--ui-stroke-secondary)']
 const THEME_CATALOG = /*__THEME_CATALOG__*/ { themes: [] }
+const SETTINGS_STORAGE_KEY = 'hermes.pixel-agents.settings.v1'
 
 const KNOWN_TASK_STATES = new Set(['triage', 'todo', 'scheduled', 'ready', 'running', 'blocked', 'review', 'done', 'archived'])
 const STATE_GROUPS = {
@@ -332,16 +333,41 @@ function assignThemeVisuals(agents, theme, mainProfileId) {
   const employees = theme.characters.filter((character) => character !== receptionist)
   const reception = theme.stations.find((station) => station.id === 'reception-main') || theme.stations[0]
   const workstations = theme.stations.filter((station) => station.id.startsWith('workstation-'))
+  const activityStations = {
+    running: theme.stations.filter((station) => ['research-console', 'focus-office', 'boardroom', 'archive', 'repair-bay'].includes(station.id)),
+    queued: theme.stations.filter((station) => station.id === 'waiting-lounge'),
+    blocked: theme.stations.filter((station) => station.id === 'approval-desk')
+  }
   const secondaryIds = agents.filter((agent) => agent.id !== mainProfileId).map((agent) => agent.id).sort()
   return agents.map((agent) => {
     const isMain = agent.id === mainProfileId
     const assignmentIndex = isMain ? -1 : secondaryIds.indexOf(agent.id)
     return Object.freeze({
       ...agent,
-      character: isMain ? receptionist : employees[assignmentIndex % employees.length],
-      station: isMain ? reception : workstations[assignmentIndex % workstations.length]
+      character: isMain ? receptionist : employees[assignmentIndex % employees.length] || receptionist,
+      station: isMain ? reception : (activityStations[agent.group]?.[assignmentIndex % activityStations[agent.group].length] || workstations[assignmentIndex % workstations.length] || reception)
     })
   })
+}
+
+function resolveMainProfileId(snapshot, activeProfileId, preferredProfileId) {
+  const profiles = snapshot?.profiles || []
+  const preferred = profiles.find((profile) => profile.id === preferredProfileId)
+  const canonical = profiles.find((profile) => ['main', 'default', 'profile:default'].includes(profile.id.toLowerCase()))
+    || profiles.find((profile) => /^(main agent|default|ea)$/i.test(profile.label))
+  return preferred?.id || canonical?.id || profiles[0]?.id || activeProfileId
+}
+
+function loadPresentationSettings(defaultThemeId) {
+  try {
+    const value = JSON.parse(globalThis.localStorage?.getItem(SETTINGS_STORAGE_KEY) || 'null')
+    if (value?.schemaVersion === 1) return { schemaVersion: 1, selectedThemeId: value.selectedThemeId || defaultThemeId, mainProfileId: value.mainProfileId || null }
+  } catch { /* storage is optional */ }
+  return { schemaVersion: 1, selectedThemeId: defaultThemeId, mainProfileId: null }
+}
+
+function savePresentationSettings(settings) {
+  try { globalThis.localStorage?.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)) } catch { /* storage is optional */ }
 }
 
 function themeAssetUrl(asset) {
@@ -355,6 +381,13 @@ function ThemeSelector({ themeId, onChange }) {
       jsx('option', { value: 'fixture', children: 'Simple office' }),
       ...THEME_CATALOG.themes.map((theme) => jsx('option', { value: theme.id, disabled: !theme.ready, children: theme.ready ? theme.label : `${theme.label} (missing locally)` }, theme.id))
     ] })
+  ] })
+}
+
+function MainAgentSelector({ agents, mainProfileId, onChange }) {
+  return jsxs('label', { className: 'flex items-center gap-2 text-xs text-(--ui-text-secondary)', children: [
+    jsx('span', { children: 'Reception' }),
+    jsx('select', { value: mainProfileId || '', onChange: (event) => onChange(event.target.value), className: 'max-w-36 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-surface-primary) px-2 py-1 text-(--ui-text-primary)', 'aria-label': 'Main Agent at reception', children: agents.map((agent) => jsx('option', { value: agent.id, children: agent.label }, agent.id)) })
   ] })
 }
 
@@ -394,23 +427,29 @@ function FreshnessBadge({ query, gateway }) {
 
 function PixelAgentsPage() {
   const gateway = useValue(host.state.gateway)
-  const mainProfileId = useValue(host.state.profile)
+  const activeProfileId = useValue(host.state.profile)
   const query = usePixelAgentsData()
   const [filters, setFilters] = useState({ state: 'all', search: '' })
   const defaultTheme = THEME_CATALOG.themes.find((theme) => theme.ready)?.id || 'fixture'
-  const [themeId, setThemeId] = useState(defaultTheme)
+  const [settings, setSettings] = useState(() => loadPresentationSettings(defaultTheme))
   const [selectedId, setSelectedId] = useState(null)
   const agents = useMemo(() => buildAgents(query.data), [query.data])
   const filtered = useMemo(() => applyFilters(agents, filters), [agents, filters])
   const totals = stateTotals(agents, query.data?.tasks || [])
-  const theme = THEME_CATALOG.themes.find((candidate) => candidate.id === themeId)
+  const theme = THEME_CATALOG.themes.find((candidate) => candidate.id === settings.selectedThemeId)
+  const mainProfileId = resolveMainProfileId(query.data, activeProfileId, settings.mainProfileId)
+  const updateSettings = (change) => {
+    const next = { ...settings, ...change }
+    setSettings(next)
+    savePresentationSettings(next)
+  }
   if (gateway !== 'open') return jsx(ErrorState, { title: 'Pixel Agents unavailable', description: 'Hermes gateway is disconnected. No fallback data path is used.' })
   if (query.isLoading && !query.data) return jsx('div', { className: 'p-4', children: jsx(Skeleton, { className: 'h-40 w-full' }) })
   if (query.isError && !query.data) return jsx(ErrorState, { title: 'Snapshot unavailable', description: 'The approved read-only Kanban snapshot could not be read.' })
   return jsxs('div', { className: 'flex h-full flex-col gap-3 p-4 text-sm', children: [
     jsxs('header', { className: 'flex flex-wrap items-center justify-between gap-3', children: [
       jsxs('div', { children: [jsx('h1', { className: 'text-lg font-semibold', children: 'Pixel Agents' }), jsx('p', { className: 'text-(--ui-text-secondary)', children: query.data ? `Board ${query.data.board} · revision ${query.data.revision}` : 'Read-only Hermes Kanban snapshot' })] }),
-      jsxs('div', { className: 'flex items-center gap-3', children: [jsx(ThemeSelector, { themeId, onChange: setThemeId }), jsx(FreshnessBadge, { query, gateway }), jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => query['refetch'](), children: 'Retry' })] })
+      jsxs('div', { className: 'flex flex-wrap items-center gap-3', children: [jsx(ThemeSelector, { themeId: settings.selectedThemeId, onChange: (selectedThemeId) => updateSettings({ selectedThemeId }) }), jsx(MainAgentSelector, { agents, mainProfileId, onChange: (mainProfileId) => updateSettings({ mainProfileId }) }), jsx(FreshnessBadge, { query, gateway }), jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => query['refetch'](), children: 'Retry' })] })
     ] }),
     jsxs('div', { className: 'grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_340px]', children: [
       jsx('section', { className: 'min-w-0', children: jsx(ThemeRoom, { agents, theme, mainProfileId, selectedId, onSelect: setSelectedId }) }),
@@ -435,10 +474,12 @@ function AgentCard({ agent }) {
 
 function PixelOfficePane() {
   const gateway = useValue(host.state.gateway)
-  const mainProfileId = useValue(host.state.profile)
+  const activeProfileId = useValue(host.state.profile)
   const query = usePixelAgentsData()
   const agents = buildAgents(query.data)
   const theme = THEME_CATALOG.themes.find((candidate) => candidate.ready)
+  const settings = loadPresentationSettings(theme?.id || 'fixture')
+  const mainProfileId = resolveMainProfileId(query.data, activeProfileId, settings.mainProfileId)
   return jsxs('div', { className: 'flex h-full flex-col gap-2 p-3 text-xs', children: [
     jsxs('div', { className: 'flex items-center justify-between', children: [jsx('strong', { children: 'Pixel Office' }), jsx(Button, { size: 'xs', variant: 'secondary', onClick: () => host.navigate(ROUTE), children: 'Open dashboard' })] }),
     gateway !== 'open' ? jsx('div', { className: 'text-(--ui-text-secondary)', children: 'Disconnected; no fallback path.' }) : jsx(ThemeRoom, { agents, theme, mainProfileId, compact: true })
