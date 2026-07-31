@@ -8,10 +8,11 @@ Latest commit: `b2e5b8a`
 
 Read these in order:
 
-1. `docs/critiques/current-implementation-critique.md`
-2. `docs/plans/web-dashboard-rebuild-plan.md`
-3. `CONTEXT.md`
-4. `DECISION-MAP.md`
+1. `docs/specs/control-room-ui-and-themes.md`
+2. `docs/critiques/current-implementation-critique.md`
+3. `docs/plans/web-dashboard-rebuild-plan.md`
+4. `CONTEXT.md`
+5. `DECISION-MAP.md`
 
 The old desktop/Kanban attempt remains recoverable on `archive/desktop-kanban-attempt` and must not become the implementation base.
 

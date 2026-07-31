@@ -13,6 +13,19 @@ test('dashboard manifest registers a browser tab and backend route', async () =>
   assert.equal(manifest.api, 'plugin_api.py')
 })
 
+test('Modern Corporate Office theme descriptor is local-only and pixel-safe', async () => {
+  const theme = JSON.parse(await readFile(resolve(root, 'src/themes/modern-corporate-v1.json'), 'utf8'))
+  assert.equal(theme.id, 'modern-corporate-v1')
+  assert.equal(theme.sourceRoot, 'assets/pixel_art/Modern_Corporate_Office_Pixel_Art_Asset_Pack_v1.0')
+  assert.deepEqual([theme.base.width, theme.base.height], [1536, 1024])
+  assert.equal(theme.characters.length, 8)
+  assert.equal(theme.characters.at(-1), '08_Receptionist_Front_Seated.png')
+  assert.equal(theme.animation.authoritative, false)
+  assert.equal(theme.license.localOnly, true)
+  assert.equal(theme.license.redistributionAllowed, false)
+  assert.equal(theme.rendering.filter, 'nearest-neighbor')
+})
+
 test('built bundle contains dashboard registration and fixture labels', async () => {
   const bundle = await readFile(resolve(root, 'dashboard/dist/index.js'), 'utf8')
   assert.match(bundle, /__HERMES_PLUGIN_SDK__/)
