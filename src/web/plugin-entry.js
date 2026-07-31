@@ -4,7 +4,7 @@ export function registerDashboardPlugin(sdk = globalThis.__HERMES_PLUGIN_SDK__, 
   if (!sdk || !registry) throw new Error('Hermes dashboard Plugin SDK is unavailable')
   function ControlRoomPage() {
     const ref = sdk.React.useRef(null)
-    sdk.React.useEffect(() => ref.current ? mountControlRoom(ref.current) : undefined, [])
+    sdk.React.useEffect(() => ref.current ? mountControlRoom(ref.current, { fetchJSON: sdk.fetchJSON }) : undefined, [ref])
     return sdk.React.createElement('div', { ref, className: 'control-room-route' })
   }
   registry.register('hermes-pixel-control-room', ControlRoomPage)
