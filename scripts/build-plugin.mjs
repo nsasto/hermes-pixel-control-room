@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -23,6 +24,11 @@ const requiredFiles = [
   ...themeDefinition.characters.map((character) => join(characterSourceRoot, character.file))
 ]
 const ready = requiredFiles.every(existsSync)
+
+function prepareWebAssets(pairs) {
+  const result = spawnSync('python', [join(root, 'scripts', 'prepare-web-assets.py'), ...pairs.flat()], { encoding: 'utf8' })
+  assert.equal(result.status, 0, result.stderr || 'web asset preparation failed')
+}
 
 function sha256(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex')
@@ -74,11 +80,11 @@ const webTheme = {
   base: {
     width: themeDefinition.base.width,
     height: themeDefinition.base.height,
-    asset: ready ? `./themes/${themeDefinition.id}/office-empty.png` : null
+    asset: ready ? `./themes/${themeDefinition.id}/office-empty.webp` : null
   },
   characters: themeDefinition.characters.map((character, index) => ({
     role: character.role,
-    asset: ready ? `./themes/${themeDefinition.id}/characters/${String(index + 1).padStart(2, '0')}.png` : null
+    asset: ready ? `./themes/${themeDefinition.id}/characters/${String(index + 1).padStart(2, '0')}.webp` : null
   })),
   stations: themeDefinition.stations,
   rendering: themeDefinition.rendering,
@@ -97,18 +103,21 @@ const webTheme = {
 if (ready) {
   mkdirSync(characterOutputRoot, { recursive: true })
   mkdirSync(dashboardCharacterOutputRoot, { recursive: true })
-  copyFileSync(sceneSource, join(outputRoot, 'office-empty.png'))
-  copyFileSync(sceneSource, join(dashboardOutputRoot, 'office-empty.png'))
+  const assetPairs = [
+    [sceneSource, join(outputRoot, 'office-empty.webp')],
+    [sceneSource, join(dashboardOutputRoot, 'office-empty.webp')]
+  ]
   themeDefinition.characters.forEach((character, index) => {
-    const outputName = `${String(index + 1).padStart(2, '0')}.png`
-    copyFileSync(join(characterSourceRoot, character.file), join(characterOutputRoot, outputName))
-    copyFileSync(join(characterSourceRoot, character.file), join(dashboardCharacterOutputRoot, outputName))
+    const outputName = `${String(index + 1).padStart(2, '0')}.webp`
+    assetPairs.push([join(characterSourceRoot, character.file), join(characterOutputRoot, outputName)])
+    assetPairs.push([join(characterSourceRoot, character.file), join(dashboardCharacterOutputRoot, outputName)])
   })
+  prepareWebAssets(assetPairs)
   webTheme.provenance.outputHashes = {
-    [`themes/${themeDefinition.id}/office-empty.png`]: sha256(join(outputRoot, 'office-empty.png')),
+    [`themes/${themeDefinition.id}/office-empty.webp`]: sha256(join(outputRoot, 'office-empty.webp')),
     ...Object.fromEntries(themeDefinition.characters.map((character, index) => {
-      const output = join(characterOutputRoot, `${String(index + 1).padStart(2, '0')}.png`)
-      return [`themes/${themeDefinition.id}/characters/${String(index + 1).padStart(2, '0')}.png`, sha256(output)]
+      const output = join(characterOutputRoot, `${String(index + 1).padStart(2, '0')}.webp`)
+      return [`themes/${themeDefinition.id}/characters/${String(index + 1).padStart(2, '0')}.webp`, sha256(output)]
     }))
   }
 }
@@ -127,9 +136,9 @@ writeFileSync(join(distRoot, 'theme-catalog.json'), `${JSON.stringify(catalog, n
 const dashboardCatalog = JSON.parse(JSON.stringify(catalog))
 for (const theme of dashboardCatalog.themes) {
   if (!theme.ready) continue
-  theme.base.asset = `/dashboard-plugins/hermes-pixel-control-room/dist/themes/${theme.id}/office-empty.png`
+  theme.base.asset = `/dashboard-plugins/hermes-pixel-control-room/dist/themes/${theme.id}/office-empty.webp`
   theme.characters.forEach((character, index) => {
-    character.asset = `/dashboard-plugins/hermes-pixel-control-room/dist/themes/${theme.id}/characters/${String(index + 1).padStart(2, '0')}.png`
+    character.asset = `/dashboard-plugins/hermes-pixel-control-room/dist/themes/${theme.id}/characters/${String(index + 1).padStart(2, '0')}.webp`
   })
 }
 const controlRoomSource = readFileSync(join(root, 'src', 'web', 'control-room.js'), 'utf8').replace(/export function /g, 'function ')

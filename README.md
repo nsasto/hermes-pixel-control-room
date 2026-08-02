@@ -27,6 +27,11 @@ That directory is excluded from Git and must not be committed or redistributed. 
 
 For the Modern Corporate Office theme, keep the pack directory named
 `Modern_Corporate_Office_Pixel_Art_Asset_Pack_v1.0`. Running `npm run build`
-copies only the empty room scene and eight individual characters into ignored
-local `dist/themes/` output. Rebuild and reinstall/reload the plugin after adding
-or changing local theme assets.
+validates the licensed source and converts the empty room scene and eight
+individual characters into lossless WebP project assets. The native output is
+written under ignored `dist/themes/`; browser-dashboard output is written under
+ignored `dashboard/dist/themes/`. Keep the matching ignored theme directory with
+the plugin installation, then restart/reload Hermes after adding or changing
+local assets. Original source PNGs are never copied into browser-served output.
+The build uses Python and Pillow (`python -m pip install Pillow`) for this local
+lossless conversion step.

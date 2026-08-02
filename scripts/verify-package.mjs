@@ -21,7 +21,7 @@ assert.deepEqual(entries.sort(), ['plugin.js', 'theme-catalog.json', 'themes'], 
 assert.ok(statSync(dist).size < 300_000, 'plugin bundle is bounded')
 const themeRoot = join(root, 'dist/themes/modern-corporate-v1')
 if (existsSync(themeRoot)) {
-  assert.deepEqual(readdirSync(themeRoot).sort(), ['characters', 'office-empty.png'])
-  assert.equal(readdirSync(join(themeRoot, 'characters')).filter((name) => name.endsWith('.png')).length, 8)
-  assert.ok(statSync(join(themeRoot, 'office-empty.png')).size < 4_000_000, 'prepared scene is bounded')
+  assert.deepEqual(readdirSync(themeRoot).sort(), ['characters', 'office-empty.webp'])
+  assert.equal(readdirSync(join(themeRoot, 'characters')).filter((name) => name.endsWith('.webp')).length, 8)
+  assert.ok(statSync(join(themeRoot, 'office-empty.webp')).size < 4_000_000, 'prepared scene is bounded')
 }

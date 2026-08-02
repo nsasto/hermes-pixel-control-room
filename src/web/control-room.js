@@ -1,4 +1,4 @@
-const STATUS_LABELS = Object.freeze({ idle: 'Idle', working: 'Running', queued: 'Queued', done: 'Done', blocked: 'Blocked', input: 'Needs input' })
+const STATUS_LABELS = Object.freeze({ unknown: 'Unknown', idle: 'Idle', working: 'Running', queued: 'Queued', done: 'Done', blocked: 'Blocked', input: 'Needs input' })
 const SNAPSHOT_URL = '/api/plugins/hermes-pixel-control-room/snapshot'
 const SETTINGS_KEY = 'hermes.control-room.settings.v1'
 
@@ -17,7 +17,7 @@ function el(tag, attributes = {}, children = []) {
 }
 
 function durableStatus(status) {
-  return status === 'running' ? 'working' : status === 'ready' || status === 'queued' || status === 'todo' || status === 'scheduled' ? 'queued' : status === 'blocked' ? 'blocked' : status === 'done' || status === 'archived' ? 'done' : 'idle'
+  return status === 'running' ? 'working' : status === 'ready' || status === 'queued' || status === 'todo' || status === 'scheduled' ? 'queued' : status === 'blocked' ? 'blocked' : status === 'done' || status === 'archived' ? 'done' : status === 'idle' ? 'idle' : 'unknown'
 }
 
 function activityPresentation(event) {
@@ -74,7 +74,7 @@ function saveSettings(settings) {
 }
 
 function themeCatalog() { return globalThis.__CONTROL_ROOM_THEMES__?.themes || [] }
-function selectedTheme(settings) { return themeCatalog().find((theme) => theme.id === settings.themeId) || themeCatalog().find((theme) => theme.ready) || null }
+function selectedTheme(settings) { return themeCatalog().find((theme) => theme.id === settings.themeId && theme.ready) || null }
 
 function preferredMainAgent(view, settings) {
   return view.agents.find((agent) => agent.id === settings.mainAgentId)?.id
@@ -194,6 +194,7 @@ function render(root, state) {
   root.replaceChildren(el('div', { className: 'cr-app' }, [
     renderHeader(state, rerender),
     state.error ? el('div', { className: 'cr-warning', textContent: 'Live refresh failed; showing the last successful snapshot.' }) : null,
+    state.settings.themeId && !selectedTheme(state.settings) ? el('div', { className: 'cr-warning', textContent: 'The selected theme is missing locally. Showing the simple office until its prepared assets are available.' }) : null,
     el('main', { className: 'cr-layout' }, [renderRoom(state, rerender), renderPanel(state, rerender)])
   ]))
 }

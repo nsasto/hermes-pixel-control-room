@@ -1,8 +1,8 @@
 {
   "version": 1,
   "approvedOutputs": [
-    "dist/themes/modern-corporate-v1/office-empty.png",
-    "dist/themes/modern-corporate-v1/characters/*.png"
+    "dist/themes/modern-corporate-v1/office-empty.webp",
+    "dist/themes/modern-corporate-v1/characters/*.webp"
   ],
   "note": "Licensed theme files are copied only into ignored local build output and are never committed."
 }

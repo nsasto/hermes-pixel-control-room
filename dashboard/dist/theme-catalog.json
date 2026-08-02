@@ -10,40 +10,40 @@
       "base": {
         "width": 1536,
         "height": 1024,
-        "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/office-empty.png"
+        "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/office-empty.webp"
       },
       "characters": [
         {
           "role": "executive",
-          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/01.png"
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/01.webp"
         },
         {
           "role": "employee",
-          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/02.png"
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/02.webp"
         },
         {
           "role": "employee",
-          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/03.png"
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/03.webp"
         },
         {
           "role": "employee",
-          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/04.png"
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/04.webp"
         },
         {
           "role": "employee",
-          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/05.png"
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/05.webp"
         },
         {
           "role": "employee",
-          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/06.png"
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/06.webp"
         },
         {
           "role": "employee",
-          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/07.png"
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/07.webp"
         },
         {
           "role": "receptionist",
-          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/08.png"
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/08.webp"
         }
       ],
       "stations": [
@@ -139,15 +139,15 @@
           "02_Characters/Individual_PNG/08_Receptionist_Front_Seated.png": "e2ded3ae5eb554467d06a74d50a808a8277e1d80201bbdfdf8550fbbe523f40d"
         },
         "outputHashes": {
-          "themes/modern-corporate-v1/office-empty.png": "8997c626f7789405445ef4424e61e90770a7e6a44934271a0354d055cbb95dce",
-          "themes/modern-corporate-v1/characters/01.png": "5df05118cc51f53b0f01466edc96fbc00d902d13accd08e75f29b766088d1fc7",
-          "themes/modern-corporate-v1/characters/02.png": "2932584093acc6f1399b7b9c9a9f824ba64d3f98d27432193d3f34dd284e1a71",
-          "themes/modern-corporate-v1/characters/03.png": "9336688a84befaf017f6489accef6f7e4e19510f50eaf713b8c977bdc27fb61d",
-          "themes/modern-corporate-v1/characters/04.png": "97424be312f224555e4d7db5879bb986fac3e8ac1a3645f5aea494d8bb4d2245",
-          "themes/modern-corporate-v1/characters/05.png": "6e52818e20699fa82db8d6d90ce84c3c79d42b6b54aa4659950b3dbd3123f7e6",
-          "themes/modern-corporate-v1/characters/06.png": "72278cb3f0e2f471178e2099e56a9c548faa8b299aa036b0271774cf9df7268a",
-          "themes/modern-corporate-v1/characters/07.png": "7cb14160e963a8bc69daf744dd131f708b7747d5bf3ff19f3cb51e5e80c7af5d",
-          "themes/modern-corporate-v1/characters/08.png": "e2ded3ae5eb554467d06a74d50a808a8277e1d80201bbdfdf8550fbbe523f40d"
+          "themes/modern-corporate-v1/office-empty.webp": "a4a978d1c309b23af071f6d0f8c042a45649fe38ebc09a20a5e9179a733fc077",
+          "themes/modern-corporate-v1/characters/01.webp": "026a5987549bbdc0c38f5ea1633bfb2c8513972ce160f549c9a8eaf7f7e4fb94",
+          "themes/modern-corporate-v1/characters/02.webp": "6e860f1551a02be2bdee1c59cc28a776d7c0494c97b69839c5c990efd706298a",
+          "themes/modern-corporate-v1/characters/03.webp": "3770672f34c93845aafd5bf1b3c104de7b0464b3412d1b7a9825bedf760c52b5",
+          "themes/modern-corporate-v1/characters/04.webp": "0cab26e092b378bf8b903b8eead68338dac37cca41479de7d81d352285ea30c3",
+          "themes/modern-corporate-v1/characters/05.webp": "20e4bd91516cca0639e161b326048bd63ce42955fb1d94340855400c23e98c2b",
+          "themes/modern-corporate-v1/characters/06.webp": "23fd1ec1821cd0a83727d128fda39434d5993064747d64ddba75204dd8b34476",
+          "themes/modern-corporate-v1/characters/07.webp": "11f87c920d2af9c1bb3a6e8af6daf87c24c41fdd6073be28612125a2b6c25bf5",
+          "themes/modern-corporate-v1/characters/08.webp": "8758e6703bb9ca256e43e8b6c091dfef12a2cae84c9d849f5a1e35aed12ee9af"
         }
       }
     }
