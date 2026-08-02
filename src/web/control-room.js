@@ -142,7 +142,7 @@ function renderHeader(state, rerender) {
 function renderRoom(state, rerender) {
   const theme = selectedTheme(state.settings)
   const mainAgentId = preferredMainAgent(state.view, state.settings)
-  const stage = el('section', { className: `cr-room${theme?.ready ? ' has-theme' : ' is-simple'}`, 'aria-label': 'Pixel office room', style: { '--cr-room-zoom': String(state.settings.zoom) } })
+  const stage = el('section', { className: `cr-room${theme?.ready ? ' has-theme' : ' is-simple'}`, 'aria-label': 'Pixel office room', style: { '--cr-room-zoom': String(state.settings.zoom), '--cr-room-aspect': theme?.base?.width && theme?.base?.height ? `${theme.base.width} / ${theme.base.height}` : '3 / 2' } })
   if (theme?.ready) stage.append(el('img', { className: 'cr-room-background', src: theme.base.asset, alt: '', draggable: 'false' }))
   else stage.append(el('div', { className: 'cr-simple-room', textContent: state.settings.themeId === 'simple' ? 'Simple office' : 'Theme assets are not prepared on this installation.' }))
   const layer = el('div', { className: 'cr-agent-layer', role: 'list', 'aria-label': 'Configured Hermes Agents' })

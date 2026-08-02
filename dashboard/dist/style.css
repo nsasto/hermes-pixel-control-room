@@ -19,7 +19,7 @@
 .cr-warning { padding:8px 12px; border:1px solid #d49b43; border-radius:8px; background:#3b2e19; color:#ffe1a3; }
 .cr-layout { display:grid; min-height:0; flex:1; grid-template-columns:minmax(0,1fr) 360px; gap:12px; }
 .cr-room-viewport { display:grid; min-width:0; place-items:start center; overflow:auto; border:1px solid #50605d; border-radius:12px; background:#182725; }
-.cr-room { position:relative; width:calc(100% * var(--cr-room-zoom,1)); min-width:720px; aspect-ratio:3/2; overflow:hidden; transform-origin:top left; image-rendering:pixelated; }
+.cr-room { position:relative; width:calc(100% * var(--cr-room-zoom,1)); min-width:720px; aspect-ratio:var(--cr-room-aspect,3 / 2); overflow:hidden; transform-origin:top left; image-rendering:pixelated; }
 .cr-room-background { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; image-rendering:pixelated; user-select:none; }
 .cr-simple-room { position:absolute; inset:0; display:grid; place-items:center; background:repeating-linear-gradient(0deg,#c89a63 0 3px,#d9b67f 3px 15px); color:#3e2b20; font-weight:700; }
 .cr-agent-layer { position:absolute; inset:0; }
@@ -29,7 +29,8 @@
 .cr-character-body { clip-path:inset(38% 0 0 0); }
 .cr-character-head { position:absolute; inset:0; clip-path:inset(0 0 62% 0); animation:cr-head-bob 2.8s steps(2,end) infinite; }
 .cr-fallback-character { display:grid; aspect-ratio:1; place-items:center; border:2px solid #3e2b20; background:#286e65; color:#fff; }
-.cr-presence-label { position:absolute; bottom:100%; left:50%; display:grid; min-width:max-content; transform:translateX(-50%); padding:3px 6px; border:1px solid #899690; border-radius:5px; background:#12201f; color:#f5efe3; font-size:.66rem; line-height:1.3; text-align:left; box-shadow:0 1px 3px #0008; }
+.cr-presence-label { position:absolute; bottom:100%; left:50%; display:grid; min-width:max-content; transform:translate(-50%,4px); padding:3px 6px; border:1px solid #899690; border-radius:5px; background:#12201f; color:#f5efe3; font-size:.66rem; line-height:1.3; text-align:left; box-shadow:0 1px 3px #0008; opacity:0; visibility:hidden; transition:opacity 100ms ease,transform 100ms ease,visibility 100ms; pointer-events:none; }
+.cr-presence:hover .cr-presence-label,.cr-presence:focus-visible .cr-presence-label { transform:translate(-50%,0); opacity:1; visibility:visible; }
 .cr-presence-label small { color:#d5cfc3; }
 .cr-presence-status { position:absolute; right:-2px; bottom:4px; width:11px; height:11px; border:2px solid #fff; border-radius:50%; background:#89928f; }
 .cr-status-working .cr-presence-status { background:#45b85b; }

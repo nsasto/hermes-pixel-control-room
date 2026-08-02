@@ -35,3 +35,10 @@ the plugin installation, then restart/reload Hermes after adding or changing
 local assets. Original source PNGs are never copied into browser-served output.
 The build uses Python and Pillow (`python -m pip install Pillow`) for this local
 lossless conversion step.
+
+The browser theme selector also discovers the seven supported packs declared in
+`src/themes/office-packs.json`. Keep their existing versioned directory names;
+no renaming step is required. Each declaration owns its scene, characters, and
+station anchors so Agent placement follows that room's furniture. After adding
+or updating packs on another Hermes machine, pull the plugin changes, run
+`npm run build`, and restart the web dashboard plugin.

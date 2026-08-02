@@ -1,0 +1,37 @@
+[
+  {
+    "id": "corporate-headquarters-v1", "label": "Corporate Headquarters", "sourceRoot": "assets/pixel_art/Corporate_Headquarters_Office_Asset_Pack",
+    "scene": "01_MASTER_SCENES/Corporate_Headquarters_Office_Empty_1536x1024.png", "characters": "03_CHARACTERS/INDIVIDUAL_PNG",
+    "stations": [["reception-main",50,67],["workstation-1",41,22],["workstation-2",58,22],["workstation-3",41,33],["workstation-4",58,33],["workstation-5",41,44],["workstation-6",58,44],["focus-office",15,24],["boardroom",85,28],["research-console",86,80],["archive",14,58],["waiting-lounge",15,78],["approval-desk",50,73],["repair-bay",87,67]]
+  },
+  {
+    "id": "meeting-training-v1", "label": "Meeting & Training Centre", "sourceRoot": "assets/pixel_art/Corporate_Meeting_Training_Center_v1.0",
+    "scene": "01_Master_Scenes/scene_without_characters_1254x1254.png", "characters": "04_Characters/Original_Poses",
+    "stations": [["reception-main",49,67],["workstation-1",14,20],["workstation-2",33,20],["workstation-3",14,29],["workstation-4",33,29],["workstation-5",14,39],["workstation-6",33,39],["focus-office",19,55],["boardroom",76,24],["research-console",14,55],["archive",14,72],["waiting-lounge",48,77],["approval-desk",49,71],["repair-bay",14,55]]
+  },
+  {
+    "id": "corporate-office-v1-1", "label": "Corporate Office v1.1", "sourceRoot": "assets/pixel_art/Corporate_Office_Pixel_Art_Asset_Pack_v1.1",
+    "scene": "01_Master_Scene/7476549e-4a2b-47c2-9f72-8d25117d9701.png", "characters": "04_Individual_Characters",
+    "stations": [["reception-main",50,78],["workstation-1",32,43],["workstation-2",39,43],["workstation-3",60,43],["workstation-4",67,43],["workstation-5",32,64],["workstation-6",39,64],["focus-office",77,20],["boardroom",22,20],["research-console",93,72],["archive",88,49],["waiting-lounge",14,72],["approval-desk",50,74],["repair-bay",91,72]]
+  },
+  {
+    "id": "corporate-office-v2", "label": "Corporate Office v2.0", "sourceRoot": "assets/pixel_art/Corporate_Office_Pixel_Art_Asset_Pack_v2.0",
+    "scene": "01_Master_Scenes/scene_corporate_office_empty.png", "characters": "02_Characters_PNG/Original_Poses",
+    "stations": [["reception-main",15,62],["workstation-1",38,25],["workstation-2",52,25],["workstation-3",38,44],["workstation-4",52,44],["workstation-5",38,62],["workstation-6",52,62],["focus-office",85,72],["boardroom",81,24],["research-console",86,72],["archive",14,49],["waiting-lounge",14,77],["approval-desk",16,67],["repair-bay",14,49]]
+  },
+  {
+    "id": "call-center-v1", "label": "Customer Support Call Centre", "sourceRoot": "assets/pixel_art/Customer_Support_Call_Center_Office_v1.0",
+    "scene": "01_Master_Scenes/office_scene_empty.png", "characters": "02_Characters_PNG/Seated_Work_Poses",
+    "stations": [["reception-main",15,62],["workstation-1",39,27],["workstation-2",61,27],["workstation-3",39,45],["workstation-4",61,45],["workstation-5",39,64],["workstation-6",61,64],["focus-office",15,15],["boardroom",82,20],["research-console",15,15],["archive",89,72],["waiting-lounge",14,76],["approval-desk",16,65],["repair-bay",90,70]]
+  },
+  {
+    "id": "lennox-corporate-v1-2", "label": "Lennox Corporate Office", "sourceRoot": "assets/pixel_art/LennoxStudio_Corporate_Office_Asset_Pack_v1.2",
+    "scene": "01_Master_Scenes/Corporate_Office_Empty_Master.png", "characters": "03_Characters/Individual_PNG",
+    "stations": [["reception-main",50,22],["workstation-1",34,51],["workstation-2",46,51],["workstation-3",58,51],["workstation-4",34,67],["workstation-5",46,67],["workstation-6",58,67],["focus-office",84,58],["boardroom",83,23],["research-console",17,48],["archive",17,48],["waiting-lounge",84,83],["approval-desk",50,26],["repair-bay",17,48]]
+  },
+  {
+    "id": "top-down-modern-v1-2", "label": "Top-down Modern Office", "sourceRoot": "assets/pixel_art/Top_Down_Modern_Corporate_Office_Pixel_Asset_Pack_v1.2",
+    "scene": "01_Master_Scenes/scene_office_empty_2508x2508.png", "characters": "02_Characters_PNG/02_Master_Accurate_Poses",
+    "stations": [["reception-main",15,53],["workstation-1",40,37],["workstation-2",51,37],["workstation-3",62,37],["workstation-4",40,57],["workstation-5",51,57],["workstation-6",62,57],["focus-office",18,18],["boardroom",84,20],["research-console",84,75],["archive",84,75],["waiting-lounge",16,78],["approval-desk",16,57],["repair-bay",84,75]]
+  }
+]

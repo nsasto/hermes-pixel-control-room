@@ -107,4 +107,6 @@ test('browser styles animate only the character head and keep labels legible', (
   assert.match(css, /\.cr-character-head\s*\{[^}]*animation:cr-head-bob/)
   assert.match(css, /\.cr-presence-label\s*\{[^}]*background:#12201f[^}]*color:#f5efe3/)
   assert.match(css, /\.cr-panel\s*\{[^}]*color:#f5efe3/)
+  assert.match(css, /\.cr-presence-label\s*\{[^}]*opacity:0/)
+  assert.match(css, /\.cr-presence:hover \.cr-presence-label[^}]*opacity:1/)
 })

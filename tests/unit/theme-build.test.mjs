@@ -27,3 +27,20 @@ test('plugin bundle contains the prepared theme catalog', () => {
   assert.match(plugin, /office-empty\.webp/)
   assert.doesNotMatch(plugin, /__THEME_CATALOG__/)
 })
+
+test('build connects every installed office pack with independent placement anchors', () => {
+  const catalog = JSON.parse(readFileSync(join(root, 'dashboard/dist/theme-catalog.json'), 'utf8'))
+  const readyThemes = catalog.themes.filter((theme) => theme.ready)
+  assert.ok(readyThemes.length >= 7, `expected at least seven ready themes, found ${readyThemes.length}`)
+  assert.equal(new Set(readyThemes.map((theme) => theme.id)).size, readyThemes.length)
+  for (const theme of readyThemes) {
+    assert.ok(theme.base.asset?.endsWith('.webp'), `${theme.id} needs a prepared scene`)
+    assert.ok(theme.characters.length >= 8, `${theme.id} needs at least eight characters`)
+    assert.ok(theme.stations.some((station) => station.id === 'reception-main'), `${theme.id} needs reception placement`)
+    assert.ok(theme.stations.filter((station) => station.id.startsWith('workstation-')).length >= 6, `${theme.id} needs six desk placements`)
+  }
+  const modern = readyThemes.find((theme) => theme.id === 'modern-corporate-v1')
+  const reception = modern.stations.find((station) => station.id === 'reception-main')
+  assert.ok(reception.x >= 47 && reception.x <= 53, 'Modern Corporate reception belongs at bottom-centre')
+  assert.ok(reception.y >= 74 && reception.y <= 80, 'Modern Corporate receptionist belongs behind the desk')
+})

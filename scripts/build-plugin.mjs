@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -9,6 +9,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const distRoot = join(root, 'dist')
 const dashboardDistRoot = join(root, 'dashboard', 'dist')
 const themeDefinition = JSON.parse(readFileSync(join(root, 'src/themes/modern-corporate-v1.json'), 'utf8'))
+const officePacks = JSON.parse(readFileSync(join(root, 'src/themes/office-packs.json'), 'utf8'))
 const sourceRoot = join(root, themeDefinition.sourceRoot)
 const outputRoot = join(distRoot, 'themes', themeDefinition.id)
 const characterSourceRoot = join(sourceRoot, '02_Characters', 'Individual_PNG')
@@ -28,6 +29,19 @@ const ready = requiredFiles.every(existsSync)
 function prepareWebAssets(pairs) {
   const result = spawnSync('python', [join(root, 'scripts', 'prepare-web-assets.py'), ...pairs.flat()], { encoding: 'utf8' })
   assert.equal(result.status, 0, result.stderr || 'web asset preparation failed')
+}
+
+function collectPngs(directory) {
+  if (!existsSync(directory)) return []
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name)
+    return entry.isDirectory() ? collectPngs(path) : entry.name.toLowerCase().endsWith('.png') ? [path] : []
+  }).sort()
+}
+
+function pngSize(path) {
+  const bytes = readFileSync(path)
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) }
 }
 
 function sha256(path) {
@@ -122,7 +136,52 @@ if (ready) {
   }
 }
 
-const catalog = { schemaVersion: 1, themes: [webTheme] }
+const additionalThemes = officePacks.map((pack) => {
+  const packRoot = join(root, pack.sourceRoot)
+  const scene = join(packRoot, pack.scene)
+  const availableCharacters = collectPngs(join(packRoot, pack.characters))
+  const receptionist = availableCharacters.find((path) => /reception/i.test(path))
+  const selectedCharacters = availableCharacters.slice(0, 12)
+  if (receptionist && !selectedCharacters.includes(receptionist)) selectedCharacters[selectedCharacters.length - 1] = receptionist
+  const packReady = existsSync(scene) && selectedCharacters.length >= 8
+  const dimensions = packReady ? pngSize(scene) : { width: 0, height: 0 }
+  const packOutputRoot = join(distRoot, 'themes', pack.id)
+  const packDashboardRoot = join(dashboardDistRoot, 'themes', pack.id)
+  const packTheme = {
+    id: pack.id,
+    label: pack.label,
+    description: `${pack.label} local office theme.`,
+    ready: packReady,
+    expectedLocalPath: pack.sourceRoot,
+    base: { ...dimensions, asset: packReady ? `./themes/${pack.id}/office-empty.webp` : null },
+    characters: selectedCharacters.map((path, index) => ({
+      role: path === receptionist ? 'receptionist' : 'employee',
+      asset: packReady ? `./themes/${pack.id}/characters/${String(index + 1).padStart(2, '0')}.webp` : null
+    })),
+    stations: pack.stations.map(([id, x, y]) => ({ id, x, y })),
+    rendering: { filter: 'nearest-neighbor', integerScalePreferred: true, preserveAlpha: true },
+    provenance: { sourceUrl: themeDefinition.sourceUrl, packVersion: pack.id, sourceHashes: {}, outputHashes: {} }
+  }
+  if (!packReady) return packTheme
+  const pairs = [[scene, join(packOutputRoot, 'office-empty.webp')], [scene, join(packDashboardRoot, 'office-empty.webp')]]
+  selectedCharacters.forEach((path, index) => {
+    const name = `${String(index + 1).padStart(2, '0')}.webp`
+    pairs.push([path, join(packOutputRoot, 'characters', name)], [path, join(packDashboardRoot, 'characters', name)])
+    packTheme.provenance.sourceHashes[path.slice(packRoot.length + 1).replaceAll('\\', '/')] = sha256(path)
+  })
+  packTheme.provenance.sourceHashes[pack.scene] = sha256(scene)
+  prepareWebAssets(pairs)
+  packTheme.provenance.outputHashes = {
+    [`themes/${pack.id}/office-empty.webp`]: sha256(join(packOutputRoot, 'office-empty.webp')),
+    ...Object.fromEntries(selectedCharacters.map((_, index) => {
+      const relative = `themes/${pack.id}/characters/${String(index + 1).padStart(2, '0')}.webp`
+      return [relative, sha256(join(distRoot, relative))]
+    }))
+  }
+  return packTheme
+})
+
+const catalog = { schemaVersion: 1, themes: [webTheme, ...additionalThemes] }
 const marker = '/*__THEME_CATALOG__*/ { themes: [] }'
 const source = readFileSync(join(root, 'src/plugin.js'), 'utf8')
 assert.equal(source.split(marker).length, 2, 'plugin source must contain exactly one theme catalog marker')
