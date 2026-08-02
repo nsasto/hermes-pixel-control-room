@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "themes": [
+    {
+      "id": "modern-corporate-v1",
+      "label": "Modern Corporate Office",
+      "description": "Local office theme for the first Control Room release.",
+      "ready": true,
+      "expectedLocalPath": "assets/pixel_art/Modern_Corporate_Office_Pixel_Art_Asset_Pack_v1.0",
+      "base": {
+        "width": 1536,
+        "height": 1024,
+        "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/office-empty.png"
+      },
+      "characters": [
+        {
+          "role": "executive",
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/01.png"
+        },
+        {
+          "role": "employee",
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/02.png"
+        },
+        {
+          "role": "employee",
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/03.png"
+        },
+        {
+          "role": "employee",
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/04.png"
+        },
+        {
+          "role": "employee",
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/05.png"
+        },
+        {
+          "role": "employee",
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/06.png"
+        },
+        {
+          "role": "employee",
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/07.png"
+        },
+        {
+          "role": "receptionist",
+          "asset": "/dashboard-plugins/hermes-pixel-control-room/dist/themes/modern-corporate-v1/characters/08.png"
+        }
+      ],
+      "stations": [
+        {
+          "id": "reception-main",
+          "x": 38,
+          "y": 77
+        },
+        {
+          "id": "workstation-1",
+          "x": 27,
+          "y": 35
+        },
+        {
+          "id": "workstation-2",
+          "x": 43,
+          "y": 35
+        },
+        {
+          "id": "workstation-3",
+          "x": 27,
+          "y": 47
+        },
+        {
+          "id": "workstation-4",
+          "x": 43,
+          "y": 47
+        },
+        {
+          "id": "workstation-5",
+          "x": 27,
+          "y": 60
+        },
+        {
+          "id": "workstation-6",
+          "x": 43,
+          "y": 60
+        },
+        {
+          "id": "focus-office",
+          "x": 44,
+          "y": 13
+        },
+        {
+          "id": "boardroom",
+          "x": 82,
+          "y": 19
+        },
+        {
+          "id": "research-console",
+          "x": 78,
+          "y": 38
+        },
+        {
+          "id": "archive",
+          "x": 68,
+          "y": 53
+        },
+        {
+          "id": "waiting-lounge",
+          "x": 80,
+          "y": 82
+        },
+        {
+          "id": "approval-desk",
+          "x": 48,
+          "y": 75
+        },
+        {
+          "id": "repair-bay",
+          "x": 91,
+          "y": 42
+        }
+      ],
+      "rendering": {
+        "filter": "nearest-neighbor",
+        "integerScalePreferred": true,
+        "preserveAlpha": true
+      },
+      "provenance": {
+        "sourceUrl": "https://lennoxstudio.itch.io/luxury-office-pixel-art-asset-pack",
+        "packVersion": "1.0",
+        "sourceHashes": {
+          "01_Scenes/Modern_Corporate_Office_Empty.png": "8997c626f7789405445ef4424e61e90770a7e6a44934271a0354d055cbb95dce",
+          "05_Documentation/LICENSE_EN.txt": "5c906abfbba31500c22ad83f5360c66efa4d97191745cb814051e4050a0c6ec4",
+          "02_Characters/Individual_PNG/01_Executive_Manager_Seated.png": "5df05118cc51f53b0f01466edc96fbc00d902d13accd08e75f29b766088d1fc7",
+          "02_Characters/Individual_PNG/02_Employee_White_Shirt_Seated.png": "2932584093acc6f1399b7b9c9a9f824ba64d3f98d27432193d3f34dd284e1a71",
+          "02_Characters/Individual_PNG/03_Employee_Yellow_Top_Seated.png": "9336688a84befaf017f6489accef6f7e4e19510f50eaf713b8c977bdc27fb61d",
+          "02_Characters/Individual_PNG/04_Employee_Green_Top_Seated.png": "97424be312f224555e4d7db5879bb986fac3e8ac1a3645f5aea494d8bb4d2245",
+          "02_Characters/Individual_PNG/05_Employee_Purple_Top_Seated.png": "6e52818e20699fa82db8d6d90ce84c3c79d42b6b54aa4659950b3dbd3123f7e6",
+          "02_Characters/Individual_PNG/06_Employee_Blue_Top_Seated.png": "72278cb3f0e2f471178e2099e56a9c548faa8b299aa036b0271774cf9df7268a",
+          "02_Characters/Individual_PNG/07_Employee_Burgundy_Top_Seated.png": "7cb14160e963a8bc69daf744dd131f708b7747d5bf3ff19f3cb51e5e80c7af5d",
+          "02_Characters/Individual_PNG/08_Receptionist_Front_Seated.png": "e2ded3ae5eb554467d06a74d50a808a8277e1d80201bbdfdf8550fbbe523f40d"
+        },
+        "outputHashes": {
+          "themes/modern-corporate-v1/office-empty.png": "8997c626f7789405445ef4424e61e90770a7e6a44934271a0354d055cbb95dce",
+          "themes/modern-corporate-v1/characters/01.png": "5df05118cc51f53b0f01466edc96fbc00d902d13accd08e75f29b766088d1fc7",
+          "themes/modern-corporate-v1/characters/02.png": "2932584093acc6f1399b7b9c9a9f824ba64d3f98d27432193d3f34dd284e1a71",
+          "themes/modern-corporate-v1/characters/03.png": "9336688a84befaf017f6489accef6f7e4e19510f50eaf713b8c977bdc27fb61d",
+          "themes/modern-corporate-v1/characters/04.png": "97424be312f224555e4d7db5879bb986fac3e8ac1a3645f5aea494d8bb4d2245",
+          "themes/modern-corporate-v1/characters/05.png": "6e52818e20699fa82db8d6d90ce84c3c79d42b6b54aa4659950b3dbd3123f7e6",
+          "themes/modern-corporate-v1/characters/06.png": "72278cb3f0e2f471178e2099e56a9c548faa8b299aa036b0271774cf9df7268a",
+          "themes/modern-corporate-v1/characters/07.png": "7cb14160e963a8bc69daf744dd131f708b7747d5bf3ff19f3cb51e5e80c7af5d",
+          "themes/modern-corporate-v1/characters/08.png": "e2ded3ae5eb554467d06a74d50a808a8277e1d80201bbdfdf8550fbbe523f40d"
+        }
+      }
+    }
+  ]
+}

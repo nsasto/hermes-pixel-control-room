@@ -30,12 +30,20 @@ test('Modern Corporate Office theme descriptor is local-only and pixel-safe', as
   assert.equal(theme.rendering.filter, 'nearest-neighbor')
 })
 
-test('built bundle contains dashboard registration and fixture labels', async () => {
+test('built bundle contains dashboard registration without desktop imports', async () => {
   const bundle = await readFile(resolve(root, 'dashboard/dist/index.js'), 'utf8')
   assert.match(bundle, /__HERMES_PLUGIN_SDK__/)
   assert.match(bundle, /hermes-pixel-control-room/)
-  assert.match(bundle, /Main \/ EA/)
   assert.doesNotMatch(bundle, /@hermes\/plugin-sdk/)
+})
+
+test('browser bundle presents the office-first Control Room surface', async () => {
+  const bundle = await readFile(resolve(root, 'dashboard/dist/index.js'), 'utf8')
+  for (const label of ['Control Room', 'Office theme', 'Focus selected', 'Executions', 'Recent activity']) {
+    assert.match(bundle, new RegExp(label), `missing browser UI label: ${label}`)
+  }
+  assert.match(bundle, /__CONTROL_ROOM_THEMES__/)
+  assert.match(bundle, /projectControlRoom/)
 })
 
 test('control room uses the authenticated snapshot endpoint and renders an animated pixel office', async () => {

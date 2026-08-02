@@ -6,11 +6,14 @@ import { fileURLToPath } from 'node:url'
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const distRoot = join(root, 'dist')
+const dashboardDistRoot = join(root, 'dashboard', 'dist')
 const themeDefinition = JSON.parse(readFileSync(join(root, 'src/themes/modern-corporate-v1.json'), 'utf8'))
 const sourceRoot = join(root, themeDefinition.sourceRoot)
 const outputRoot = join(distRoot, 'themes', themeDefinition.id)
 const characterSourceRoot = join(sourceRoot, '02_Characters', 'Individual_PNG')
 const characterOutputRoot = join(outputRoot, 'characters')
+const dashboardOutputRoot = join(dashboardDistRoot, 'themes', themeDefinition.id)
+const dashboardCharacterOutputRoot = join(dashboardOutputRoot, 'characters')
 const sceneSource = join(sourceRoot, themeDefinition.base.emptyScene)
 const licenseSource = join(sourceRoot, themeDefinition.license.documentation)
 const requiredFiles = [
@@ -58,7 +61,9 @@ if (ready) {
 }
 
 mkdirSync(distRoot, { recursive: true })
+mkdirSync(dashboardDistRoot, { recursive: true })
 rmSync(join(distRoot, 'themes'), { recursive: true, force: true })
+rmSync(join(dashboardDistRoot, 'themes'), { recursive: true, force: true })
 
 const webTheme = {
   id: themeDefinition.id,
@@ -91,9 +96,13 @@ const webTheme = {
 
 if (ready) {
   mkdirSync(characterOutputRoot, { recursive: true })
+  mkdirSync(dashboardCharacterOutputRoot, { recursive: true })
   copyFileSync(sceneSource, join(outputRoot, 'office-empty.png'))
+  copyFileSync(sceneSource, join(dashboardOutputRoot, 'office-empty.png'))
   themeDefinition.characters.forEach((character, index) => {
-    copyFileSync(join(characterSourceRoot, character.file), join(characterOutputRoot, `${String(index + 1).padStart(2, '0')}.png`))
+    const outputName = `${String(index + 1).padStart(2, '0')}.png`
+    copyFileSync(join(characterSourceRoot, character.file), join(characterOutputRoot, outputName))
+    copyFileSync(join(characterSourceRoot, character.file), join(dashboardCharacterOutputRoot, outputName))
   })
   webTheme.provenance.outputHashes = {
     [`themes/${themeDefinition.id}/office-empty.png`]: sha256(join(outputRoot, 'office-empty.png')),
@@ -114,3 +123,19 @@ const entry = source.replace(
 )
 writeFileSync(join(distRoot, 'plugin.js'), entry, 'utf8')
 writeFileSync(join(distRoot, 'theme-catalog.json'), `${JSON.stringify(catalog, null, 2)}\n`, 'utf8')
+
+const dashboardCatalog = JSON.parse(JSON.stringify(catalog))
+for (const theme of dashboardCatalog.themes) {
+  if (!theme.ready) continue
+  theme.base.asset = `/dashboard-plugins/hermes-pixel-control-room/dist/themes/${theme.id}/office-empty.png`
+  theme.characters.forEach((character, index) => {
+    character.asset = `/dashboard-plugins/hermes-pixel-control-room/dist/themes/${theme.id}/characters/${String(index + 1).padStart(2, '0')}.png`
+  })
+}
+const controlRoomSource = readFileSync(join(root, 'src', 'web', 'control-room.js'), 'utf8').replace(/export function /g, 'function ')
+const dashboardEntrySource = readFileSync(join(root, 'src', 'web', 'plugin-entry.js'), 'utf8')
+  .replace(/^import .*\r?\n/, '')
+  .replace(/export function /g, 'function ')
+const dashboardBundle = `(function () {\n"use strict";\nglobalThis.__CONTROL_ROOM_THEMES__ = ${JSON.stringify(dashboardCatalog)};\n${controlRoomSource}\n${dashboardEntrySource}\n})();\n`
+writeFileSync(join(dashboardDistRoot, 'index.js'), dashboardBundle, 'utf8')
+writeFileSync(join(dashboardDistRoot, 'theme-catalog.json'), `${JSON.stringify(dashboardCatalog, null, 2)}\n`, 'utf8')

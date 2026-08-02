@@ -1,0 +1,80 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { mountControlRoom, projectControlRoom } from '../../src/web/control-room.js'
+
+const snapshot = {
+  schemaVersion: 1,
+  board: 'default',
+  revision: 12,
+  profiles: [
+    { name: 'main', onDisk: true },
+    { name: 'research', onDisk: true }
+  ],
+  tasks: [
+    { id: 't-main', title: 'Coordinate release', assignee: 'main', status: 'running', createdAt: 20, startedAt: 21, completedAt: null, currentRunId: 7 },
+    { id: 't-research', title: 'Compare sources', assignee: 'research', status: 'blocked', createdAt: 10, startedAt: 11, completedAt: null, currentRunId: 8 }
+  ],
+  runs: [
+    { id: 7, taskId: 't-main', profile: 'main', status: 'running', startedAt: 21, endedAt: null, outcome: null },
+    { id: 8, taskId: 't-research', profile: 'research', status: 'running', startedAt: 11, endedAt: null, outcome: null }
+  ]
+}
+
+test('browser Control Room separates durable work status from observed activity', () => {
+  const view = projectControlRoom(snapshot, {
+    selectedId: 'main',
+    activities: [
+      { eventId: 'e2', profileName: 'main', occurredAt: '2026-08-02T10:41:00Z', kind: 'subagent.started', summary: 'Delegated research' },
+      { eventId: 'e1', profileName: 'main', occurredAt: '2026-08-02T10:40:00Z', kind: 'tool.started', toolCategory: 'browser', toolName: 'web_search' }
+    ]
+  })
+
+  assert.equal(view.selected.label, 'main')
+  assert.equal(view.selected.status, 'working')
+  assert.equal(view.selected.activity.label, 'Delegating')
+  assert.equal(view.selected.executions.length, 1)
+  assert.equal(view.selected.executions[0].title, 'Coordinate release')
+  assert.deepEqual(view.selected.activities.map((activity) => activity.label), ['Delegated research', 'Browser · web_search'])
+  assert.equal(view.agents.find((agent) => agent.id === 'research').status, 'blocked')
+})
+
+class FakeNode {
+  constructor(tag = 'div') { this.tag = tag; this.children = []; this.style = {}; this.attributes = {}; this.listeners = {}; this.textContent = ''; this.value = '' }
+  append(...children) { this.children.push(...children) }
+  replaceChildren(...children) { this.children = [...children] }
+  setAttribute(key, value) { this.attributes[key] = String(value) }
+  addEventListener(type, listener) { this.listeners[type] = listener }
+}
+
+function visibleText(node) {
+  if (typeof node === 'string') return node
+  return [node.textContent, ...node.children.map(visibleText)].filter(Boolean).join(' ')
+}
+
+test('browser Control Room mounts the office-first screen and cleans up', async () => {
+  const previousDocument = globalThis.document
+  const previousStorage = globalThis.localStorage
+  const documentListeners = {}
+  globalThis.document = {
+    hidden: false,
+    createElement: (tag) => new FakeNode(tag),
+    addEventListener: (type, listener) => { documentListeners[type] = listener },
+    removeEventListener: (type) => { delete documentListeners[type] }
+  }
+  globalThis.localStorage = { getItem: () => null, setItem: () => {} }
+  const root = new FakeNode()
+  let unmounted = false
+  const cleanup = mountControlRoom(root, { fetchJSON: async () => snapshot, onUnmount: () => { unmounted = true } })
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
+  const text = visibleText(root)
+  for (const label of ['Control Room', 'Focus selected', 'Executions', 'Recent activity', 'Coordinate release']) assert.match(text, new RegExp(label))
+  assert.equal(documentListeners.visibilitychange instanceof Function, true)
+
+  cleanup()
+  assert.equal(root.children.length, 0)
+  assert.equal(unmounted, true)
+  assert.equal(documentListeners.visibilitychange, undefined)
+  globalThis.document = previousDocument
+  globalThis.localStorage = previousStorage
+})
