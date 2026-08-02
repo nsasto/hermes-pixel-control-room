@@ -46,14 +46,15 @@ test('browser bundle presents the office-first Control Room surface', async () =
   assert.match(bundle, /projectControlRoom/)
 })
 
-test('control room uses the authenticated snapshot endpoint and renders an animated pixel office', async () => {
+test('control room uses the authenticated snapshot endpoint and renders head-only motion', async () => {
   const source = await readFile(resolve(root, 'src/web/control-room.js'), 'utf8')
   const css = await readFile(resolve(root, 'dashboard/dist/style.css'), 'utf8')
   const api = await readFile(resolve(root, 'dashboard/plugin_api.py'), 'utf8')
   assert.match(source, /\/api\/plugins\/hermes-pixel-control-room\/snapshot/)
   assert.match(source, /pixel-agent-sprite/)
   assert.match(source, /aria-label.*Pixel office room/)
-  assert.match(css, /@keyframes pixel-mill/)
+  assert.match(css, /@keyframes cr-head-bob/)
+  assert.doesNotMatch(css, /@keyframes pixel-mill/)
   assert.match(css, /prefers-reduced-motion/)
   assert.match(api, /build_snapshot/)
   assert.doesNotMatch(api, /fixtureSnapshot/)

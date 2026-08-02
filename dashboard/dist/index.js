@@ -7,15 +7,17 @@ const SETTINGS_KEY = 'hermes.control-room.settings.v1'
 
 function el(tag, attributes = {}, children = []) {
   const node = document.createElement(tag)
+  let deferredValue
   for (const [key, value] of Object.entries(attributes)) {
     if (key === 'className') node.className = value
     else if (key === 'textContent') node.textContent = value
     else if (key === 'style' && value) Object.assign(node.style, value)
-    else if (key === 'value') node.value = value
+    else if (key === 'value') deferredValue = value
     else if (key.startsWith('on')) node.addEventListener(key.slice(2).toLowerCase(), value)
     else if (value != null) node.setAttribute(key, value)
   }
   for (const child of children.flat()) if (child != null && child !== '') node.append(child)
+  if (deferredValue != null) node.value = deferredValue
   return node
 }
 
@@ -77,7 +79,10 @@ function saveSettings(settings) {
 }
 
 function themeCatalog() { return globalThis.__CONTROL_ROOM_THEMES__?.themes || [] }
-function selectedTheme(settings) { return themeCatalog().find((theme) => theme.id === settings.themeId && theme.ready) || null }
+function selectedTheme(settings) {
+  if (settings.themeId) return themeCatalog().find((theme) => theme.id === settings.themeId && theme.ready) || null
+  return themeCatalog().find((theme) => theme.ready) || null
+}
 
 function preferredMainAgent(view, settings) {
   return view.agents.find((agent) => agent.id === settings.mainAgentId)?.id
@@ -142,7 +147,7 @@ function renderRoom(state, rerender) {
   const mainAgentId = preferredMainAgent(state.view, state.settings)
   const stage = el('section', { className: `cr-room${theme?.ready ? ' has-theme' : ' is-simple'}`, 'aria-label': 'Pixel office room', style: { '--cr-room-zoom': String(state.settings.zoom) } })
   if (theme?.ready) stage.append(el('img', { className: 'cr-room-background', src: theme.base.asset, alt: '', draggable: 'false' }))
-  else stage.append(el('div', { className: 'cr-simple-room', textContent: 'Theme assets are not prepared on this installation.' }))
+  else stage.append(el('div', { className: 'cr-simple-room', textContent: state.settings.themeId === 'simple' ? 'Simple office' : 'Theme assets are not prepared on this installation.' }))
   const layer = el('div', { className: 'cr-agent-layer', role: 'list', 'aria-label': 'Configured Hermes Agents' })
   state.view.agents.slice(0, 24).forEach((agent, index) => {
     const station = stationFor(agent, theme, mainAgentId, index)
@@ -155,7 +160,10 @@ function renderRoom(state, rerender) {
       'aria-label': `${agent.label}, ${STATUS_LABELS[agent.status] || 'Unknown'}, ${agent.activity.label}, at ${station.id}`,
       onClick: () => { state.selectedId = agent.id; state.view = projectControlRoom(state.snapshot, { selectedId: state.selectedId, activities: state.activities }); rerender() }
     }, [
-      character?.asset ? el('img', { className: 'cr-character', src: character.asset, alt: '', draggable: 'false' }) : el('span', { className: 'cr-fallback-character', textContent: agent.label.slice(0, 1).toUpperCase() }),
+      character?.asset ? el('span', { className: 'cr-character-stack', 'aria-hidden': 'true' }, [
+        el('img', { className: 'cr-character cr-character-body', src: character.asset, alt: '', draggable: 'false' }),
+        el('img', { className: 'cr-character cr-character-head', src: character.asset, alt: '', draggable: 'false' })
+      ]) : el('span', { className: 'cr-fallback-character', textContent: agent.label.slice(0, 1).toUpperCase() }),
       el('span', { className: 'cr-presence-label' }, [el('strong', { textContent: agent.label }), el('small', { textContent: agent.activity.label })]),
       el('span', { className: 'cr-presence-status', title: STATUS_LABELS[agent.status] || 'Unknown' })
     ])
@@ -197,7 +205,7 @@ function render(root, state) {
   root.replaceChildren(el('div', { className: 'cr-app' }, [
     renderHeader(state, rerender),
     state.error ? el('div', { className: 'cr-warning', textContent: 'Live refresh failed; showing the last successful snapshot.' }) : null,
-    state.settings.themeId && !selectedTheme(state.settings) ? el('div', { className: 'cr-warning', textContent: 'The selected theme is missing locally. Showing the simple office until its prepared assets are available.' }) : null,
+    state.settings.themeId && state.settings.themeId !== 'simple' && !selectedTheme(state.settings) ? el('div', { className: 'cr-warning', textContent: 'The selected theme is missing locally. Showing the simple office until its prepared assets are available.' }) : null,
     el('main', { className: 'cr-layout' }, [renderRoom(state, rerender), renderPanel(state, rerender)])
   ]))
 }

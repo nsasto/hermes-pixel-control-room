@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { mountControlRoom, projectControlRoom } from '../../src/web/control-room.js'
 
@@ -39,8 +40,13 @@ test('browser Control Room separates durable work status from observed activity'
 })
 
 class FakeNode {
-  constructor(tag = 'div') { this.tag = tag; this.children = []; this.style = {}; this.attributes = {}; this.listeners = {}; this.textContent = ''; this.value = '' }
-  append(...children) { this.children.push(...children) }
+  constructor(tag = 'div') { this.tag = tag; this.children = []; this.style = {}; this.attributes = {}; this.listeners = {}; this.textContent = ''; this._value = '' }
+  set value(value) { this._value = this.tag === 'select' && !this.children.some((child) => child.value === value) ? '' : value }
+  get value() { return this._value }
+  append(...children) {
+    this.children.push(...children)
+    if (this.tag === 'select' && !this._value && children.length) this._value = children[0].value
+  }
   replaceChildren(...children) { this.children = [...children] }
   setAttribute(key, value) { this.attributes[key] = String(value) }
   addEventListener(type, listener) { this.listeners[type] = listener }
@@ -51,9 +57,19 @@ function visibleText(node) {
   return [node.textContent, ...node.children.map(visibleText)].filter(Boolean).join(' ')
 }
 
+function findNode(node, predicate) {
+  if (predicate(node)) return node
+  for (const child of node.children || []) {
+    const found = findNode(child, predicate)
+    if (found) return found
+  }
+  return null
+}
+
 test('browser Control Room mounts the office-first screen and cleans up', async () => {
   const previousDocument = globalThis.document
   const previousStorage = globalThis.localStorage
+  const previousThemes = globalThis.__CONTROL_ROOM_THEMES__
   const documentListeners = {}
   globalThis.document = {
     hidden: false,
@@ -62,6 +78,7 @@ test('browser Control Room mounts the office-first screen and cleans up', async 
     removeEventListener: (type) => { delete documentListeners[type] }
   }
   globalThis.localStorage = { getItem: () => null, setItem: () => {} }
+  globalThis.__CONTROL_ROOM_THEMES__ = { themes: [{ id: 'modern-corporate-v1', label: 'Modern Corporate Office', ready: true, base: { asset: '/office.webp' }, characters: [], stations: [] }] }
   const root = new FakeNode()
   let unmounted = false
   const cleanup = mountControlRoom(root, { fetchJSON: async () => snapshot, onUnmount: () => { unmounted = true } })
@@ -69,6 +86,10 @@ test('browser Control Room mounts the office-first screen and cleans up', async 
 
   const text = visibleText(root)
   for (const label of ['Control Room', 'Focus selected', 'Executions', 'Recent activity', 'Coordinate release']) assert.match(text, new RegExp(label))
+  const themeSelect = findNode(root, (node) => node.attributes?.['aria-label'] === 'Office theme')
+  assert.equal(themeSelect.value, 'modern-corporate-v1')
+  themeSelect.listeners.change({ target: { value: 'simple' } })
+  assert.match(visibleText(root), /Simple office/)
   assert.equal(documentListeners.visibilitychange instanceof Function, true)
 
   cleanup()
@@ -77,4 +98,13 @@ test('browser Control Room mounts the office-first screen and cleans up', async 
   assert.equal(documentListeners.visibilitychange, undefined)
   globalThis.document = previousDocument
   globalThis.localStorage = previousStorage
+  globalThis.__CONTROL_ROOM_THEMES__ = previousThemes
+})
+
+test('browser styles animate only the character head and keep labels legible', () => {
+  const css = readFileSync(new URL('../../dashboard/dist/style.css', import.meta.url), 'utf8')
+  assert.doesNotMatch(css, /\.cr-presence\{[^}]*animation:/)
+  assert.match(css, /\.cr-character-head\s*\{[^}]*animation:cr-head-bob/)
+  assert.match(css, /\.cr-presence-label\s*\{[^}]*background:#12201f[^}]*color:#f5efe3/)
+  assert.match(css, /\.cr-panel\s*\{[^}]*color:#f5efe3/)
 })
