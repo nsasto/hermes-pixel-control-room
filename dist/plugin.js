@@ -28,6 +28,8 @@ const MAX_PAGES = 10
 const MAX_TEXT = 120
 const MAX_OFFICE_OCCUPANTS = 24
 const THEME_TOKEN_SENTINELS = ['var(--ui-text-secondary)', 'var(--ui-stroke-secondary)']
+const THEME_CATALOG = {"schemaVersion":1,"themes":[{"id":"modern-corporate-v1","label":"Modern Corporate Office","description":"Local office theme for the first Control Room release.","ready":true,"expectedLocalPath":"assets/pixel_art/Modern_Corporate_Office_Pixel_Art_Asset_Pack_v1.0","base":{"width":1536,"height":1024,"asset":"./themes/modern-corporate-v1/office-empty.png"},"characters":[{"role":"executive","asset":"./themes/modern-corporate-v1/characters/01.png"},{"role":"employee","asset":"./themes/modern-corporate-v1/characters/02.png"},{"role":"employee","asset":"./themes/modern-corporate-v1/characters/03.png"},{"role":"employee","asset":"./themes/modern-corporate-v1/characters/04.png"},{"role":"employee","asset":"./themes/modern-corporate-v1/characters/05.png"},{"role":"employee","asset":"./themes/modern-corporate-v1/characters/06.png"},{"role":"employee","asset":"./themes/modern-corporate-v1/characters/07.png"},{"role":"receptionist","asset":"./themes/modern-corporate-v1/characters/08.png"}],"stations":[{"id":"reception-main","x":38,"y":77},{"id":"workstation-1","x":27,"y":35},{"id":"workstation-2","x":43,"y":35},{"id":"workstation-3","x":27,"y":47},{"id":"workstation-4","x":43,"y":47},{"id":"workstation-5","x":27,"y":60},{"id":"workstation-6","x":43,"y":60},{"id":"focus-office","x":44,"y":13},{"id":"boardroom","x":82,"y":19},{"id":"research-console","x":78,"y":38},{"id":"archive","x":68,"y":53},{"id":"waiting-lounge","x":80,"y":82},{"id":"approval-desk","x":48,"y":75},{"id":"repair-bay","x":91,"y":42}],"rendering":{"filter":"nearest-neighbor","integerScalePreferred":true,"preserveAlpha":true},"provenance":{"sourceUrl":"https://lennoxstudio.itch.io/luxury-office-pixel-art-asset-pack","packVersion":"1.0","sourceHashes":{"01_Scenes/Modern_Corporate_Office_Empty.png":"8997c626f7789405445ef4424e61e90770a7e6a44934271a0354d055cbb95dce","05_Documentation/LICENSE_EN.txt":"5c906abfbba31500c22ad83f5360c66efa4d97191745cb814051e4050a0c6ec4","02_Characters/Individual_PNG/01_Executive_Manager_Seated.png":"5df05118cc51f53b0f01466edc96fbc00d902d13accd08e75f29b766088d1fc7","02_Characters/Individual_PNG/02_Employee_White_Shirt_Seated.png":"2932584093acc6f1399b7b9c9a9f824ba64d3f98d27432193d3f34dd284e1a71","02_Characters/Individual_PNG/03_Employee_Yellow_Top_Seated.png":"9336688a84befaf017f6489accef6f7e4e19510f50eaf713b8c977bdc27fb61d","02_Characters/Individual_PNG/04_Employee_Green_Top_Seated.png":"97424be312f224555e4d7db5879bb986fac3e8ac1a3645f5aea494d8bb4d2245","02_Characters/Individual_PNG/05_Employee_Purple_Top_Seated.png":"6e52818e20699fa82db8d6d90ce84c3c79d42b6b54aa4659950b3dbd3123f7e6","02_Characters/Individual_PNG/06_Employee_Blue_Top_Seated.png":"72278cb3f0e2f471178e2099e56a9c548faa8b299aa036b0271774cf9df7268a","02_Characters/Individual_PNG/07_Employee_Burgundy_Top_Seated.png":"7cb14160e963a8bc69daf744dd131f708b7747d5bf3ff19f3cb51e5e80c7af5d","02_Characters/Individual_PNG/08_Receptionist_Front_Seated.png":"e2ded3ae5eb554467d06a74d50a808a8277e1d80201bbdfdf8550fbbe523f40d"},"outputHashes":{"themes/modern-corporate-v1/office-empty.png":"8997c626f7789405445ef4424e61e90770a7e6a44934271a0354d055cbb95dce","themes/modern-corporate-v1/characters/01.png":"5df05118cc51f53b0f01466edc96fbc00d902d13accd08e75f29b766088d1fc7","themes/modern-corporate-v1/characters/02.png":"2932584093acc6f1399b7b9c9a9f824ba64d3f98d27432193d3f34dd284e1a71","themes/modern-corporate-v1/characters/03.png":"9336688a84befaf017f6489accef6f7e4e19510f50eaf713b8c977bdc27fb61d","themes/modern-corporate-v1/characters/04.png":"97424be312f224555e4d7db5879bb986fac3e8ac1a3645f5aea494d8bb4d2245","themes/modern-corporate-v1/characters/05.png":"6e52818e20699fa82db8d6d90ce84c3c79d42b6b54aa4659950b3dbd3123f7e6","themes/modern-corporate-v1/characters/06.png":"72278cb3f0e2f471178e2099e56a9c548faa8b299aa036b0271774cf9df7268a","themes/modern-corporate-v1/characters/07.png":"7cb14160e963a8bc69daf744dd131f708b7747d5bf3ff19f3cb51e5e80c7af5d","themes/modern-corporate-v1/characters/08.png":"e2ded3ae5eb554467d06a74d50a808a8277e1d80201bbdfdf8550fbbe523f40d"}}}]}
+const SETTINGS_STORAGE_KEY = 'hermes.pixel-agents.settings.v1'
 
 const KNOWN_TASK_STATES = new Set(['triage', 'todo', 'scheduled', 'ready', 'running', 'blocked', 'review', 'done', 'archived'])
 const STATE_GROUPS = {
@@ -325,6 +327,97 @@ function officeLayout(agents) {
   return Object.freeze(tiles)
 }
 
+function assignThemeVisuals(agents, theme, mainProfileId) {
+  if (!theme) return []
+  const receptionist = theme.characters.find((character) => character.role === 'receptionist') || theme.characters.at(-1)
+  const employees = theme.characters.filter((character) => character !== receptionist)
+  const reception = theme.stations.find((station) => station.id === 'reception-main') || theme.stations[0]
+  const workstations = theme.stations.filter((station) => station.id.startsWith('workstation-'))
+  const activityStations = {
+    running: theme.stations.filter((station) => ['research-console', 'focus-office', 'boardroom', 'archive', 'repair-bay'].includes(station.id)),
+    queued: theme.stations.filter((station) => station.id === 'waiting-lounge'),
+    blocked: theme.stations.filter((station) => station.id === 'approval-desk')
+  }
+  const secondaryIds = agents.filter((agent) => agent.id !== mainProfileId).map((agent) => agent.id).sort()
+  return agents.map((agent) => {
+    const isMain = agent.id === mainProfileId
+    const assignmentIndex = isMain ? -1 : secondaryIds.indexOf(agent.id)
+    return Object.freeze({
+      ...agent,
+      character: isMain ? receptionist : employees[assignmentIndex % employees.length] || receptionist,
+      station: isMain ? reception : (activityStations[agent.group]?.[assignmentIndex % activityStations[agent.group].length] || workstations[assignmentIndex % workstations.length] || reception)
+    })
+  })
+}
+
+function resolveMainProfileId(snapshot, activeProfileId, preferredProfileId) {
+  const profiles = snapshot?.profiles || []
+  const preferred = profiles.find((profile) => profile.id === preferredProfileId)
+  const canonical = profiles.find((profile) => ['main', 'default', 'profile:default'].includes(profile.id.toLowerCase()))
+    || profiles.find((profile) => /^(main agent|default|ea)$/i.test(profile.label))
+  return preferred?.id || canonical?.id || profiles[0]?.id || activeProfileId
+}
+
+function loadPresentationSettings(defaultThemeId) {
+  try {
+    const value = JSON.parse(globalThis.localStorage?.getItem(SETTINGS_STORAGE_KEY) || 'null')
+    if (value?.schemaVersion === 1) return { schemaVersion: 1, selectedThemeId: value.selectedThemeId || defaultThemeId, mainProfileId: value.mainProfileId || null }
+  } catch { /* storage is optional */ }
+  return { schemaVersion: 1, selectedThemeId: defaultThemeId, mainProfileId: null }
+}
+
+function savePresentationSettings(settings) {
+  try { globalThis.localStorage?.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)) } catch { /* storage is optional */ }
+}
+
+function themeAssetUrl(asset) {
+  return asset ? new URL(asset, import.meta.url).href : null
+}
+
+function ThemeSelector({ themeId, onChange }) {
+  return jsxs('label', { className: 'flex items-center gap-2 text-xs text-(--ui-text-secondary)', children: [
+    jsx('span', { children: 'Theme' }),
+    jsxs('select', { value: themeId, onChange: (event) => onChange(event.target.value), className: 'rounded-md border border-(--ui-stroke-secondary) bg-(--ui-surface-primary) px-2 py-1 text-(--ui-text-primary)', 'aria-label': 'Office theme', children: [
+      jsx('option', { value: 'fixture', children: 'Simple office' }),
+      ...THEME_CATALOG.themes.map((theme) => jsx('option', { value: theme.id, disabled: !theme.ready, children: theme.ready ? theme.label : `${theme.label} (missing locally)` }, theme.id))
+    ] })
+  ] })
+}
+
+function MainAgentSelector({ agents, mainProfileId, onChange }) {
+  return jsxs('label', { className: 'flex items-center gap-2 text-xs text-(--ui-text-secondary)', children: [
+    jsx('span', { children: 'Reception' }),
+    jsx('select', { value: mainProfileId || '', onChange: (event) => onChange(event.target.value), className: 'max-w-36 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-surface-primary) px-2 py-1 text-(--ui-text-primary)', 'aria-label': 'Main Agent at reception', children: agents.map((agent) => jsx('option', { value: agent.id, children: agent.label }, agent.id)) })
+  ] })
+}
+
+function ThemeRoom({ agents, theme, mainProfileId, selectedId, onSelect, compact = false }) {
+  if (!theme?.ready) {
+    const tiles = officeLayout(agents)
+    return jsx('div', { className: 'relative min-h-[180px] rounded-md border border-(--ui-stroke-secondary)', role: 'list', 'aria-label': 'Pixel Office agents', children: tiles.map((tile) => jsx('button', { type: 'button', role: 'listitem', className: 'absolute rounded px-2 py-1 text-(--ui-text-secondary)', style: { left: `${tile.x}px`, top: `${tile.y}px` }, onClick: () => tile.id !== 'overflow' && onSelect?.(tile.id), title: `${tile.label} ${tile.lane}`, children: tile.label }, tile.id)) })
+  }
+  const visuals = assignThemeVisuals(agents, theme, mainProfileId)
+  return jsx('div', {
+    className: 'relative w-full overflow-hidden rounded-md border border-(--ui-stroke-secondary)',
+    role: 'list',
+    'aria-label': `${theme.label} agents`,
+    style: { aspectRatio: `${theme.base.width} / ${theme.base.height}`, backgroundImage: `url("${themeAssetUrl(theme.base.asset)}")`, backgroundPosition: 'center', backgroundRepeat: 'no-repeat', backgroundSize: '100% 100%', imageRendering: 'pixelated' },
+    children: visuals.map((visual) => jsx('button', {
+      type: 'button',
+      role: 'listitem',
+      className: `absolute -translate-x-1/2 -translate-y-1/2 rounded-sm focus:outline-none focus:ring-2 ${visual.id === selectedId ? 'ring-2 ring-(--ui-accent)' : ''}`,
+      style: { left: `${visual.station.x}%`, top: `${visual.station.y}%`, width: compact ? '6%' : '5%' },
+      onClick: () => onSelect?.(visual.id),
+      title: `${visual.label} · ${visual.group} · ${visual.station.id}`,
+      'aria-label': `${visual.label}, ${visual.group}, at ${visual.station.id}`,
+      children: jsxs('span', { className: 'relative block', children: [
+        jsx('img', { src: themeAssetUrl(visual.character.asset), alt: '', draggable: 'false', className: 'block h-auto w-full select-none', style: { imageRendering: 'pixelated' } }),
+        compact ? null : jsx('span', { className: 'absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded bg-(--ui-surface-primary) px-1 text-[10px] text-(--ui-text-primary)', children: visual.label })
+      ] })
+    }, visual.id))
+  })
+}
+
 function FreshnessBadge({ query, gateway }) {
   const freshness = freshnessState({ gateway, lastSuccessAt: query.dataUpdatedAt ? Math.floor(query.dataUpdatedAt / 1000) : (query.data ? Math.floor(Date.now() / 1000) : 0), consecutiveFailures: query.isError ? 2 : 0, now: Math.floor(Date.now() / 1000) })
   const kind = query.isFetching ? 'info' : freshness.kind
@@ -334,22 +427,38 @@ function FreshnessBadge({ query, gateway }) {
 
 function PixelAgentsPage() {
   const gateway = useValue(host.state.gateway)
+  const activeProfileId = useValue(host.state.profile)
   const query = usePixelAgentsData()
   const [filters, setFilters] = useState({ state: 'all', search: '' })
+  const defaultTheme = THEME_CATALOG.themes.find((theme) => theme.ready)?.id || 'fixture'
+  const [settings, setSettings] = useState(() => loadPresentationSettings(defaultTheme))
+  const [selectedId, setSelectedId] = useState(null)
   const agents = useMemo(() => buildAgents(query.data), [query.data])
   const filtered = useMemo(() => applyFilters(agents, filters), [agents, filters])
   const totals = stateTotals(agents, query.data?.tasks || [])
+  const theme = THEME_CATALOG.themes.find((candidate) => candidate.id === settings.selectedThemeId)
+  const mainProfileId = resolveMainProfileId(query.data, activeProfileId, settings.mainProfileId)
+  const updateSettings = (change) => {
+    const next = { ...settings, ...change }
+    setSettings(next)
+    savePresentationSettings(next)
+  }
   if (gateway !== 'open') return jsx(ErrorState, { title: 'Pixel Agents unavailable', description: 'Hermes gateway is disconnected. No fallback data path is used.' })
   if (query.isLoading && !query.data) return jsx('div', { className: 'p-4', children: jsx(Skeleton, { className: 'h-40 w-full' }) })
   if (query.isError && !query.data) return jsx(ErrorState, { title: 'Snapshot unavailable', description: 'The approved read-only Kanban snapshot could not be read.' })
   return jsxs('div', { className: 'flex h-full flex-col gap-3 p-4 text-sm', children: [
-    jsxs('header', { className: 'flex items-center justify-between gap-3', children: [
+    jsxs('header', { className: 'flex flex-wrap items-center justify-between gap-3', children: [
       jsxs('div', { children: [jsx('h1', { className: 'text-lg font-semibold', children: 'Pixel Agents' }), jsx('p', { className: 'text-(--ui-text-secondary)', children: query.data ? `Board ${query.data.board} · revision ${query.data.revision}` : 'Read-only Hermes Kanban snapshot' })] }),
-      jsxs('div', { className: 'flex items-center gap-2', children: [jsx(FreshnessBadge, { query, gateway }), jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => query['refetch'](), children: 'Retry' })] })
+      jsxs('div', { className: 'flex flex-wrap items-center gap-3', children: [jsx(ThemeSelector, { themeId: settings.selectedThemeId, onChange: (selectedThemeId) => updateSettings({ selectedThemeId }) }), jsx(MainAgentSelector, { agents, mainProfileId, onChange: (mainProfileId) => updateSettings({ mainProfileId }) }), jsx(FreshnessBadge, { query, gateway }), jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => query['refetch'](), children: 'Retry' })] })
     ] }),
-    jsx('div', { className: 'flex flex-wrap gap-2', children: ['all','running','queued','blocked','done','unknown','idle'].map((state) => jsx(Button, { size: 'sm', variant: filters.state === state ? 'primary' : 'secondary', onClick: () => setFilters((f) => ({ ...f, state })), children: `${state} ${totals[state] || 0}` }, state)) }),
-    jsx(SearchField, { value: filters.search, onChange: (value) => setFilters((f) => ({ ...f, search: value })), placeholder: 'Search safe fields' }),
-    filtered.length === 0 ? jsx(EmptyState, { title: 'No matching agents', description: 'Try clearing filters or wait for the next read-only snapshot.' }) : jsx(ScrollArea, { className: 'min-h-0 flex-1', children: jsx('div', { className: 'grid gap-2', children: filtered.slice(0, 500).map((agent) => jsx(AgentCard, { agent }, agent.id)) }) })
+    jsxs('div', { className: 'grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_340px]', children: [
+      jsx('section', { className: 'min-w-0', children: jsx(ThemeRoom, { agents, theme, mainProfileId, selectedId, onSelect: setSelectedId }) }),
+      jsxs('aside', { className: 'flex min-h-0 flex-col gap-2', children: [
+        jsx('div', { className: 'flex flex-wrap gap-2', children: ['all','running','queued','blocked','done','unknown','idle'].map((state) => jsx(Button, { size: 'sm', variant: filters.state === state ? 'primary' : 'secondary', onClick: () => setFilters((f) => ({ ...f, state })), children: `${state} ${totals[state] || 0}` }, state)) }),
+        jsx(SearchField, { value: filters.search, onChange: (value) => setFilters((f) => ({ ...f, search: value })), placeholder: 'Search safe fields' }),
+        filtered.length === 0 ? jsx(EmptyState, { title: 'No matching agents', description: 'Try clearing filters or wait for the next read-only snapshot.' }) : jsx(ScrollArea, { className: 'min-h-0 flex-1', children: jsx('div', { className: 'grid gap-2', children: filtered.slice(0, 500).map((agent) => jsx(AgentCard, { agent }, agent.id)) }) })
+      ] })
+    ] })
   ] })
 }
 
@@ -365,12 +474,15 @@ function AgentCard({ agent }) {
 
 function PixelOfficePane() {
   const gateway = useValue(host.state.gateway)
+  const activeProfileId = useValue(host.state.profile)
   const query = usePixelAgentsData()
   const agents = buildAgents(query.data)
-  const tiles = officeLayout(agents)
+  const theme = THEME_CATALOG.themes.find((candidate) => candidate.ready)
+  const settings = loadPresentationSettings(theme?.id || 'fixture')
+  const mainProfileId = resolveMainProfileId(query.data, activeProfileId, settings.mainProfileId)
   return jsxs('div', { className: 'flex h-full flex-col gap-2 p-3 text-xs', children: [
     jsxs('div', { className: 'flex items-center justify-between', children: [jsx('strong', { children: 'Pixel Office' }), jsx(Button, { size: 'xs', variant: 'secondary', onClick: () => host.navigate(ROUTE), children: 'Open dashboard' })] }),
-    gateway !== 'open' ? jsx('div', { className: 'text-(--ui-text-secondary)', children: 'Disconnected; no fallback path.' }) : jsx('div', { className: 'relative min-h-[150px] rounded-md border border-(--ui-stroke-secondary)', role: 'list', 'aria-label': 'Pixel Office agents', children: tiles.map((tile) => jsx('button', { type: 'button', role: 'listitem', className: 'absolute rounded px-2 py-1 text-(--ui-text-secondary)', style: { left: `${tile.x}px`, top: `${tile.y}px` }, title: `${tile.label} ${tile.lane}`, children: tile.label }, tile.id)) })
+    gateway !== 'open' ? jsx('div', { className: 'text-(--ui-text-secondary)', children: 'Disconnected; no fallback path.' }) : jsx(ThemeRoom, { agents, theme, mainProfileId, compact: true })
   ] })
 }
 

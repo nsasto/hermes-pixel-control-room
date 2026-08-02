@@ -1,78 +1,25 @@
-"""Dashboard backend seam for snapshots and live event delivery.
+"""Authenticated, read-only Kanban snapshot endpoint for Control Room."""
+import sys
+from pathlib import Path
 
-The current slice serves deterministic fixture state. Hermes hook adapters will
-publish normalized events into the same bounded hub in the next slice.
-"""
+from fastapi import APIRouter, HTTPException, Query
 
-import asyncio
-import json
-from collections.abc import AsyncIterator
-
-from fastapi import APIRouter
-from fastapi import Request
-from fastapi.responses import StreamingResponse
+# The dashboard service is installed from a venv; its source root must be on
+# sys.path for Hermes' internal read-only snapshot serializer dependencies.
+_HERMES_SOURCE = Path.home() / ".hermes" / "hermes-agent"
+if str(_HERMES_SOURCE) not in sys.path:
+    sys.path.insert(0, str(_HERMES_SOURCE))
 
 router = APIRouter()
 
-_SNAPSHOT = {
-    "schemaVersion": 1,
-    "mode": "fixture",
-    "generatedAt": "2026-07-30T12:00:00.000Z",
-    "agents": [
-        {"id": "default", "label": "Main / EA", "status": "idle", "station": "reception-main", "task": None},
-        {"id": "builder", "label": "Builder", "status": "working", "station": "workstation-01", "task": "Build the control room shell"},
-        {"id": "researcher", "label": "Researcher", "status": "waiting", "station": "waiting-lounge", "task": "Waiting for source material"},
-    ],
-}
-
-
-class EventHub:
-    """Small in-memory fan-out seam; it is not a durable activity store."""
-
-    def __init__(self) -> None:
-        self._subscribers: set[asyncio.Queue[dict]] = set()
-
-    def subscribe(self) -> asyncio.Queue[dict]:
-        queue: asyncio.Queue[dict] = asyncio.Queue(maxsize=100)
-        self._subscribers.add(queue)
-        return queue
-
-    def unsubscribe(self, queue: asyncio.Queue[dict]) -> None:
-        self._subscribers.discard(queue)
-
-    def publish(self, event: dict) -> None:
-        for queue in tuple(self._subscribers):
-            if queue.full():
-                continue
-            queue.put_nowait(event)
-
-
-event_hub = EventHub()
-
-
 @router.get("/health")
 async def health() -> dict[str, str]:
-    return {"status": "fixture", "mode": "view-only"}
-
+    return {"status": "ok", "mode": "read-only"}
 
 @router.get("/snapshot")
-async def snapshot() -> dict:
-    return json.loads(json.dumps(_SNAPSHOT))
-
-
-async def _events(request: Request, queue: asyncio.Queue[dict]) -> AsyncIterator[str]:
+async def snapshot(limit: int = Query(default=200, ge=1, le=500)) -> dict:
     try:
-        while not await request.is_disconnected():
-            try:
-                event = await asyncio.wait_for(queue.get(), timeout=15)
-                yield f"event: control-room\ndata: {json.dumps(event, separators=(',', ':'))}\n\n"
-            except asyncio.TimeoutError:
-                yield ": keep-alive\n\n"
-    finally:
-        event_hub.unsubscribe(queue)
-
-
-@router.get("/events")
-async def events(request: Request) -> StreamingResponse:
-    queue = event_hub.subscribe()
-    return StreamingResponse(_events(request, queue), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+        from tui_gateway.methods_kanban import build_snapshot
+        return build_snapshot({"board": "default", "limit": limit})
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Control Room snapshot unavailable") from exc

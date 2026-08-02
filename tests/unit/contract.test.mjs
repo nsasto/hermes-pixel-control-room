@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-const root = new URL('../..', import.meta.url).pathname
+import { fileURLToPath } from 'node:url'
+const root = fileURLToPath(new URL('../..', import.meta.url))
 const src = readFileSync(join(root, 'src/plugin.js'), 'utf8')
 assert.ok(src.includes("const SNAPSHOT_METHOD = 'kanban.snapshot.v1'"))
 assert.ok(src.includes("const CHANGE_EVENT = 'kanban.changed.v1'"))

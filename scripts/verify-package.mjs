@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const root = new URL('..', import.meta.url).pathname
+const root = fileURLToPath(new URL('..', import.meta.url))
 const dist = join(root, 'dist/plugin.js')
 assert.ok(existsSync(dist), 'dist/plugin.js must exist')
 const text = readFileSync(dist, 'utf8')
@@ -16,5 +17,11 @@ for (const forbidden of ['ctx.rest','ctx.socket','host.restartGateway','useMutat
   assert.ok(!text.includes(forbidden), `forbidden runtime capability ${forbidden}`)
 }
 const entries = readdirSync(join(root, 'dist'))
-assert.deepEqual(entries.sort(), ['plugin.js'], 'dist ships only plugin.js for V1')
+assert.deepEqual(entries.sort(), ['plugin.js', 'theme-catalog.json', 'themes'], 'dist contains only the plugin and prepared local themes')
 assert.ok(statSync(dist).size < 300_000, 'plugin bundle is bounded')
+const themeRoot = join(root, 'dist/themes/modern-corporate-v1')
+if (existsSync(themeRoot)) {
+  assert.deepEqual(readdirSync(themeRoot).sort(), ['characters', 'office-empty.png'])
+  assert.equal(readdirSync(join(themeRoot, 'characters')).filter((name) => name.endsWith('.png')).length, 8)
+  assert.ok(statSync(join(themeRoot, 'office-empty.png')).size < 4_000_000, 'prepared scene is bounded')
+}

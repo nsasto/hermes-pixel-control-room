@@ -2,23 +2,26 @@
   "id": "modern-corporate-v1",
   "label": "Modern Corporate Office",
   "description": "Local office theme for the first Control Room release.",
+  "sourceUrl": "https://lennoxstudio.itch.io/luxury-office-pixel-art-asset-pack",
+  "packVersion": "1.0",
   "sourceRoot": "assets/pixel_art/Modern_Corporate_Office_Pixel_Art_Asset_Pack_v1.0",
   "perspective": "top-down",
   "base": {
     "width": 1536,
     "height": 1024,
     "emptyScene": "01_Scenes/Modern_Corporate_Office_Empty.png",
+    "sha256": "8997c626f7789405445ef4424e61e90770a7e6a44934271a0354d055cbb95dce",
     "referenceScene": "01_Scenes/Modern_Corporate_Office_With_Characters.png"
   },
   "characters": [
-    "01_Black_Shirt_Front_Seated.png",
-    "02_Black_Shirt_Back_Seated.png",
-    "03_Blue_Shirt_Front_Seated.png",
-    "04_Blue_Shirt_Back_Seated.png",
-    "05_Green_Shirt_Front_Seated.png",
-    "06_Green_Shirt_Back_Seated.png",
-    "07_Receptionist_Back_Seated.png",
-    "08_Receptionist_Front_Seated.png"
+    { "file": "01_Executive_Manager_Seated.png", "role": "executive", "sha256": "5df05118cc51f53b0f01466edc96fbc00d902d13accd08e75f29b766088d1fc7" },
+    { "file": "02_Employee_White_Shirt_Seated.png", "role": "employee", "sha256": "2932584093acc6f1399b7b9c9a9f824ba64d3f98d27432193d3f34dd284e1a71" },
+    { "file": "03_Employee_Yellow_Top_Seated.png", "role": "employee", "sha256": "9336688a84befaf017f6489accef6f7e4e19510f50eaf713b8c977bdc27fb61d" },
+    { "file": "04_Employee_Green_Top_Seated.png", "role": "employee", "sha256": "97424be312f224555e4d7db5879bb986fac3e8ac1a3645f5aea494d8bb4d2245" },
+    { "file": "05_Employee_Purple_Top_Seated.png", "role": "employee", "sha256": "6e52818e20699fa82db8d6d90ce84c3c79d42b6b54aa4659950b3dbd3123f7e6" },
+    { "file": "06_Employee_Blue_Top_Seated.png", "role": "employee", "sha256": "72278cb3f0e2f471178e2099e56a9c548faa8b299aa036b0271774cf9df7268a" },
+    { "file": "07_Employee_Burgundy_Top_Seated.png", "role": "employee", "sha256": "7cb14160e963a8bc69daf744dd131f708b7747d5bf3ff19f3cb51e5e80c7af5d" },
+    { "file": "08_Receptionist_Front_Seated.png", "role": "receptionist", "sha256": "e2ded3ae5eb554467d06a74d50a808a8277e1d80201bbdfdf8550fbbe523f40d" }
   ],
   "animation": {
     "kind": "optional-idle-reference",
@@ -26,8 +29,20 @@
     "authoritative": false
   },
   "stations": [
-    "reception-main", "workstation-*", "focus-office", "boardroom",
-    "research-console", "archive", "waiting-lounge", "approval-desk", "repair-bay"
+    { "id": "reception-main", "x": 38, "y": 77 },
+    { "id": "workstation-1", "x": 27, "y": 35 },
+    { "id": "workstation-2", "x": 43, "y": 35 },
+    { "id": "workstation-3", "x": 27, "y": 47 },
+    { "id": "workstation-4", "x": 43, "y": 47 },
+    { "id": "workstation-5", "x": 27, "y": 60 },
+    { "id": "workstation-6", "x": 43, "y": 60 },
+    { "id": "focus-office", "x": 44, "y": 13 },
+    { "id": "boardroom", "x": 82, "y": 19 },
+    { "id": "research-console", "x": 78, "y": 38 },
+    { "id": "archive", "x": 68, "y": 53 },
+    { "id": "waiting-lounge", "x": 80, "y": 82 },
+    { "id": "approval-desk", "x": 48, "y": 75 },
+    { "id": "repair-bay", "x": 91, "y": 42 }
   ],
   "rendering": {
     "filter": "nearest-neighbor",
@@ -37,6 +52,7 @@
   "license": {
     "localOnly": true,
     "redistributionAllowed": false,
-    "documentation": "05_Documentation/LICENSE_EN.txt"
+    "documentation": "05_Documentation/LICENSE_EN.txt",
+    "sha256": "5c906abfbba31500c22ad83f5360c66efa4d97191745cb814051e4050a0c6ec4"
   }
 }

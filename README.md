@@ -24,3 +24,9 @@ assets/pixel_art/
 ```
 
 That directory is excluded from Git and must not be committed or redistributed. Keep the pack's original licence file with your local copy.
+
+For the Modern Corporate Office theme, keep the pack directory named
+`Modern_Corporate_Office_Pixel_Art_Asset_Pack_v1.0`. Running `npm run build`
+copies only the empty room scene and eight individual characters into ignored
+local `dist/themes/` output. Rebuild and reinstall/reload the plugin after adding
+or changing local theme assets.
