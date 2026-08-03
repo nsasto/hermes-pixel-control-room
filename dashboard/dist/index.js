@@ -25,16 +25,16 @@ function durableStatus(status) {
   return status === 'running' ? 'working' : status === 'ready' || status === 'queued' || status === 'todo' || status === 'scheduled' ? 'queued' : status === 'blocked' ? 'blocked' : status === 'done' || status === 'archived' ? 'done' : status === 'idle' ? 'idle' : 'unknown'
 }
 
+const ACTIVITY_TIMEOUT_MS = 90_000
+
 function activityPresentation(event) {
-  if (!event) return { label: 'Unknown', detail: 'No recent observation' }
-  if (event.kind === 'subagent.started') return { label: 'Delegating', detail: event.summary || 'Temporary Helper started' }
-  if (event.kind === 'subagent.completed') return { label: 'Reviewing delegation', detail: event.summary || 'Temporary Helper completed' }
-  if (event.kind.startsWith('tool.')) {
-    const category = event.toolCategory ? event.toolCategory[0].toUpperCase() + event.toolCategory.slice(1) : 'Tool'
-    return { label: category, detail: event.toolName || event.summary || event.kind }
-  }
-  if (event.kind.startsWith('execution.')) return { label: event.kind === 'execution.started' ? 'Starting' : 'Finishing', detail: event.summary || event.kind }
-  return { label: 'Observed', detail: event.summary || event.kind }
+  if (!event) return { label: 'Idle', detail: 'No recent runtime observation', station: 'idle' }
+  if (event.kind === 'semantic.report') return { label: event.activity || 'Working', detail: event.summary || 'Current activity', station: event.activity || 'other', state: event.state, needs: event.needs, blocker: event.blocker }
+  if (event.kind === 'subagent.started') return { label: 'Delegating', detail: event.summary || 'Delegated worker started', station: 'delegating', state: 'working' }
+  if (event.kind === 'subagent.completed') return { label: 'Reviewing delegation', detail: event.summary || 'Delegated worker stopped', station: 'reviewing', state: 'working' }
+  if (event.kind === 'tool.started') { const label = event.toolCategory ? event.toolCategory[0].toUpperCase() + event.toolCategory.slice(1) : 'Tool'; return { label, detail: event.toolName || 'Tool started', station: event.toolCategory || 'other', state: 'working' } }
+  if (event.kind === 'llm.started') return { label: 'Thinking', detail: 'Hermes is reasoning', station: 'planning', state: 'working' }
+  return { label: 'Observed', detail: event.summary || event.kind, station: 'other' }
 }
 
 function activityRow(event) {
@@ -42,22 +42,32 @@ function activityRow(event) {
   return Object.freeze({ id: event.eventId, occurredAt: event.occurredAt, kind: event.kind, label: event.summary || `${presentation.label} · ${presentation.detail}`, raw: event })
 }
 
+function liveActivity(events, now = Date.now()) {
+  const recent = events.filter((event) => now - Date.parse(event.occurredAt) < ACTIVITY_TIMEOUT_MS)
+  const semantic = recent.find((event) => event.kind === 'semantic.report')
+  const approval = recent.find((event) => event.kind === 'semantic.report' && event.state === 'waiting')
+  const blocker = recent.find((event) => event.kind === 'semantic.report' && event.state === 'blocked')
+  const activeTool = recent.find((event) => event.kind === 'tool.started' && !recent.some((other) => other.kind === 'tool.completed' && other.toolName === event.toolName && other.occurredAt > event.occurredAt))
+  const activeLlm = recent.find((event) => event.kind === 'llm.started' && !recent.some((other) => other.kind === 'llm.completed' && other.occurredAt > event.occurredAt))
+  // Precedence prevents a stale semantic report from overriding observed work.
+  const source = approval || activeTool || activeLlm || blocker || semantic || recent[0] || null
+  const presentation = activityPresentation(source)
+  return { ...presentation, state: approval ? 'input' : activeTool || activeLlm ? 'working' : blocker ? 'blocked' : presentation.state === 'completed' || presentation.state === 'failed' ? 'idle' : presentation.state || 'idle' }
+}
+
 function projectControlRoom(snapshot, options = {}) {
   const profiles = snapshot?.profiles || []
   const tasks = snapshot?.tasks || []
   const runs = snapshot?.runs || []
-  const activities = [...(options.activities || [])].sort((a, b) => String(b.occurredAt).localeCompare(String(a.occurredAt)))
+  const activities = [...(options.activities || snapshot?.activities || [])].sort((a, b) => String(b.occurredAt).localeCompare(String(a.occurredAt)))
   const agents = profiles.map((profile) => {
     const agentTasks = tasks.filter((task) => task.assignee === profile.name).sort((a, b) => Number(b.createdAt) - Number(a.createdAt))
     const primaryTask = agentTasks[0] || null
     const agentRuns = runs.filter((run) => run.profile === profile.name)
     const agentActivities = activities.filter((event) => event.profileName === profile.name)
+    const activity = liveActivity(agentActivities, options.now || Date.now())
     return Object.freeze({
-      id: profile.name,
-      label: profile.name,
-      status: durableStatus(primaryTask?.status),
-      activity: activityPresentation(agentActivities[0]),
-      task: primaryTask,
+      id: profile.name, label: profile.name, status: activity.state, activity, task: primaryTask,
       executions: Object.freeze(agentTasks.map((task) => Object.freeze({ id: task.id, title: task.title || 'Untitled execution', status: durableStatus(task.status), startedAt: task.startedAt, completedAt: task.completedAt, run: agentRuns.find((run) => run.taskId === task.id) || null }))),
       activities: Object.freeze(agentActivities.map(activityRow))
     })
@@ -94,7 +104,12 @@ function stationFor(agent, theme, mainAgentId, index) {
   const byId = (id) => theme?.stations.find((station) => station.id === id)
   if (agent.id === mainAgentId && byId('reception-main')) return byId('reception-main')
   if (agent.status === 'blocked' && byId('approval-desk')) return byId('approval-desk')
-  if (agent.status === 'queued' && byId('waiting-lounge')) return byId('waiting-lounge')
+  if (agent.status === 'input' && byId('waiting-lounge')) return byId('waiting-lounge')
+  const activityStation = {
+    researching: 'research-console', browsing: 'research-console', coding: 'focus-office', testing: 'repair-bay',
+    reviewing: 'boardroom', delegating: 'boardroom', reading: 'archive', managing_files: 'archive', planning: 'focus-office'
+  }[agent.activity.station]
+  if (activityStation && byId(activityStation)) return byId(activityStation)
   if (agent.status === 'working') {
     const active = ['research-console', 'focus-office', 'boardroom', 'archive', 'repair-bay'].map(byId).filter(Boolean)
     if (active.length) return active[index % active.length]
@@ -145,7 +160,7 @@ function renderHeader(state, rerender) {
 function renderRoom(state, rerender) {
   const theme = selectedTheme(state.settings)
   const mainAgentId = preferredMainAgent(state.view, state.settings)
-  const stage = el('section', { className: `cr-room${theme?.ready ? ' has-theme' : ' is-simple'}`, 'aria-label': 'Pixel office room', style: { '--cr-room-zoom': String(state.settings.zoom) } })
+  const stage = el('section', { className: `cr-room${theme?.ready ? ' has-theme' : ' is-simple'}`, 'aria-label': 'Pixel office room', style: { '--cr-room-zoom': String(state.settings.zoom), '--cr-room-aspect': theme?.base?.width && theme?.base?.height ? `${theme.base.width} / ${theme.base.height}` : '3 / 2' } })
   if (theme?.ready) stage.append(el('img', { className: 'cr-room-background', src: theme.base.asset, alt: '', draggable: 'false' }))
   else stage.append(el('div', { className: 'cr-simple-room', textContent: state.settings.themeId === 'simple' ? 'Simple office' : 'Theme assets are not prepared on this installation.' }))
   const layer = el('div', { className: 'cr-agent-layer', role: 'list', 'aria-label': 'Configured Hermes Agents' })

@@ -1,14 +1,20 @@
-"""Authenticated, read-only Kanban snapshot endpoint for Control Room."""
+"""Authenticated, minimized Control Room read model.
+
+Kanban is included only as backlog/ownership context. Runtime activity is derived
+from Hermes lifecycle hooks and an intentionally metadata-only local journal.
+"""
 import sys
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
 
-# The dashboard service is installed from a venv; its source root must be on
-# sys.path for Hermes' internal read-only snapshot serializer dependencies.
+_ROOT = Path(__file__).resolve().parent.parent
 _HERMES_SOURCE = Path.home() / ".hermes" / "hermes-agent"
-if str(_HERMES_SOURCE) not in sys.path:
-    sys.path.insert(0, str(_HERMES_SOURCE))
+for candidate in (_ROOT, _HERMES_SOURCE):
+    if str(candidate) not in sys.path:
+        sys.path.insert(0, str(candidate))
+
+from runtime.activity_store import recent
 
 router = APIRouter()
 
@@ -20,6 +26,11 @@ async def health() -> dict[str, str]:
 async def snapshot(limit: int = Query(default=200, ge=1, le=500)) -> dict:
     try:
         from tui_gateway.methods_kanban import build_snapshot
-        return build_snapshot({"board": "default", "limit": limit})
+        snapshot = build_snapshot({"board": "default", "limit": limit})
+        # The journal contains no raw tool arguments/results, messages, prompts,
+        # paths, credentials, or other sensitive payloads.
+        snapshot["activities"] = recent(limit=limit)
+        snapshot["activitySchemaVersion"] = 1
+        return snapshot
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Control Room snapshot unavailable") from exc

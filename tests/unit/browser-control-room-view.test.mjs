@@ -25,17 +25,20 @@ test('browser Control Room separates durable work status from observed activity'
   const view = projectControlRoom(snapshot, {
     selectedId: 'main',
     activities: [
+      { eventId: 'e3', profileName: 'main', occurredAt: new Date().toISOString(), kind: 'semantic.report', state: 'working', activity: 'planning', summary: 'Planning release coordination' },
       { eventId: 'e2', profileName: 'main', occurredAt: '2026-08-02T10:41:00Z', kind: 'subagent.started', summary: 'Delegated research' },
-      { eventId: 'e1', profileName: 'main', occurredAt: '2026-08-02T10:40:00Z', kind: 'tool.started', toolCategory: 'browser', toolName: 'web_search' }
+      { eventId: 'e1', profileName: 'main', occurredAt: '2026-08-02T10:40:00Z', kind: 'tool.started', toolCategory: 'browsing', toolName: 'web_search' },
+      { eventId: 'e4', profileName: 'research', occurredAt: new Date().toISOString(), kind: 'semantic.report', state: 'blocked', activity: 'researching', summary: 'Comparing sources', blocker: 'Awaiting primary source' }
     ]
   })
 
   assert.equal(view.selected.label, 'main')
   assert.equal(view.selected.status, 'working')
-  assert.equal(view.selected.activity.label, 'Delegating')
+  assert.equal(view.selected.activity.label, 'planning')
+  assert.equal(view.selected.activity.detail, 'Planning release coordination')
   assert.equal(view.selected.executions.length, 1)
   assert.equal(view.selected.executions[0].title, 'Coordinate release')
-  assert.deepEqual(view.selected.activities.map((activity) => activity.label), ['Delegated research', 'Browser · web_search'])
+  assert.deepEqual(view.selected.activities.map((activity) => activity.label), ['Planning release coordination', 'Delegated research', 'Browsing · web_search'])
   assert.equal(view.agents.find((agent) => agent.id === 'research').status, 'blocked')
 })
 

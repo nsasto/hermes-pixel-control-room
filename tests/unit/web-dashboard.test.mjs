@@ -23,7 +23,7 @@ test('Modern Corporate Office theme descriptor is local-only and pixel-safe', as
   assert.equal(theme.characters[0].role, 'executive')
   assert.equal(theme.characters.at(-1).file, '08_Receptionist_Front_Seated.png')
   assert.equal(theme.characters.at(-1).role, 'receptionist')
-  assert.equal(theme.stations.find((station) => station.id === 'reception-main').x, 38)
+  assert.equal(theme.stations.find((station) => station.id === 'reception-main').x, 50)
   assert.equal(theme.animation.authoritative, false)
   assert.equal(theme.license.localOnly, true)
   assert.equal(theme.license.redistributionAllowed, false)
